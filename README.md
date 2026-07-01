@@ -16,9 +16,12 @@ AegisPath is a full-stack cybersecurity simulation platform. Security engineers 
 1.  Constructs a directed graph from the topology using **NetworkX**
 2.  Calculates **dynamic, stateful edge weights** based on real-world factors — CVSS scores, IP whitelists, open ports, and vulnerability flags
 3.  Applies an **attacker persona** (Script Kiddie, APT) that shifts the algorithm's priorities and re-routes the path
-4.  Runs **Dijkstra's shortest path** to find the optimal lateral movement route
-5.  Visualizes the attack hop-by-hop on the canvas with a **sequential animation**
-6.  Delivers a **Risk Assessment Report** with a numerical score and human-readable contributing factors
+4.  Allows setting custom **Attacker Entry Point** and **High-Value Target** pins to dynamically solve custom routes
+5.  Runs **Dijkstra's shortest path** to find the optimal lateral movement route
+6.  Visualizes the attack hop-by-hop on the canvas with a **sequential animation**
+7.  Delivers a **Risk Assessment Report** with a numerical score, human-readable contributing factors, and deduplicated **actionable mitigations**
+8.  Generates and downloads an **Enterprise PDF report** containing the active workspace canvas and dynamic mitigation guidelines
+9.  Supports **JSON Import and Export** to save and reload complex network topologies
 
 ---
 
@@ -37,7 +40,9 @@ AegisPath/
 │   ├── src/
 │   │   ├── App.jsx          # Main application: state, DnD, animation, API calls
 │   │   ├── components/
-│   │   │   └── Canvas.jsx   # ReactFlow wrapper (nodes, edges, minimap, controls)
+│   │   │   ├── Canvas.jsx   # ReactFlow wrapper (nodes, edges, minimap, controls)
+│   │   │   ├── Inspector.jsx # Live config editor pane & pin controllers
+│   │   │   └── Sidebar.jsx  # Drag-and-drop palette, active simulations, JSON operations
 │   │   └── index.css        # Enterprise design system (CSS variables, glass UI)
 │   └── package.json
 │

@@ -106,10 +106,15 @@ Accepts a `NetworkGraph` payload and returns a `SimulationResponse`.
   "attack_path": ["n1", "n2", "n3"],
   "contributing_factors": [
     "Simulated under attacker persona: APT Threat Group.",
-    "Firewall 'Border Firewall' bypassed via whitelisted IP rule.",
+    "Firewall Border Firewall allowed malicious pivot traffic.",
     "High CVSS vulnerability (8.5) detected on host 'Database Server'.",
-    "Weak credentials identified on node 'Database Server'.",
+    "Brute-forced weak credentials on Database Server",
     "Cleartext traffic intercepted on link 'Border Firewall' → 'Database Server'."
+  ],
+  "recommended_actions": [
+    "Review and restrict ACL rules on Border Firewall; implement Zero Trust least-privilege access.",
+    "Enforce MFA and minimum password complexity policies on Database Server.",
+    "Encrypt network links and enable TLS for all client-server communications."
   ],
   "risk_score": 100.0,
   "message": "Successfully simulated graph containing 3 nodes and 2 edges."
@@ -130,6 +135,8 @@ Accepts a `NetworkGraph` payload and returns a `SimulationResponse`.
 | `has_weak_credentials`  | `bool`      | Grants a large traversal discount for APT persona                  |
 | `is_patched`            | `bool`      | `false` increases traversal cost (increases risk score)            |
 | `is_compromised`        | `bool`      | If true, source node checks for shared ports with target           |
+| `is_attacker_entry`     | `bool`      | Designates custom entry point for the attack path solver           |
+| `is_target_asset`       | `bool`      | Designates custom target destination for the attack path solver    |
 
 **Edge config:**
 
@@ -142,14 +149,10 @@ Accepts a `NetworkGraph` payload and returns a `SimulationResponse`.
 ## Simulation Engine Internals
 
 1. **Graph Construction** — nodes and bidirectional edges are added to a `networkx.DiGraph`.
-2. **Weight Calculation** (`calculate_traversal_cost`) — edge weight is computed per-pair based on:
-   - Target type (firewall vs. endpoint)
-   - Firewall IP whitelist matching
-   - CVSS score and vulnerability flags on the target
-   - Port overlap with a compromised source
-   - **Attacker persona modifiers** (additive penalties/discounts)
-3. **Pathfinding** — `nx.shortest_path(weight='weight')` finds the minimum-cost route from node[0] to node[-1].
-4. **Risk Scoring** — traverses the resolved path, accumulating a risk score (0–100) and generating human-readable contributing factors per node and edge.
+2. **Weight Calculation** (`calculate_traversal_cost`) — edge weight is computed per-pair based on target/source parameters and attacker persona modifiers.
+3. **Pin Resolution** — checks for custom nodes containing `is_attacker_entry` or `is_target_asset` flags in config; falls back to `nodes[0]` (attacker origin) and `nodes[-1]` (target destination) respectively if flags are omitted.
+4. **Pathfinding** — `nx.shortest_path(weight='weight')` finds the minimum-cost route between the resolved entry and target nodes.
+5. **Risk Scoring & Remediation** — traverses the resolved path, accumulating a risk score (0–100), generating human-readable contributing factors, and constructing a list of deduplicated recommended mitigations.
 
 ---
 
