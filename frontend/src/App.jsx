@@ -29,6 +29,8 @@ import {
 import Canvas from './components/Canvas';
 import Inspector from './components/Inspector';
 import Sidebar from './components/Sidebar';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import './App.css';
 
 // --- Node style helpers ---
@@ -549,6 +551,139 @@ export default function App() {
     setError(null);
   };
 
+  const generatePDFReport = async () => {
+    // Save current states
+    const wasSidebarOpen = isSidebarOpen;
+    const wasInspectorOpen = isInspectorOpen;
+    const wasReportOpen = showReport;
+
+    // Hide UI elements to clean up the canvas image capture
+    setIsSidebarOpen(false);
+    setIsInspectorOpen(false);
+    setShowReport(false);
+
+    // Wait for DOM changes to apply
+    await new Promise((r) => setTimeout(r, 300));
+
+    try {
+      const container = document.querySelector('.canvas-container');
+      if (!container) return;
+
+      const canvas = await html2canvas(container, {
+        backgroundColor: '#080a0f',
+        logging: false,
+        useCORS: true,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      // Draw Professional Header Panel
+      pdf.setFillColor(13, 16, 23);
+      pdf.rect(0, 0, pageWidth, 40, 'F');
+
+      pdf.setTextColor(244, 63, 94);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(18);
+      pdf.text('AegisPath Automated Threat Model Report', 15, 18);
+
+      pdf.setTextColor(148, 163, 184);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      const currentDate = new Date().toLocaleString();
+      pdf.text(`Date generated: ${currentDate}`, 15, 26);
+      pdf.text(`Attacker Persona: ${PERSONAS.find((p) => p.id === persona)?.label || persona}  |  Risk Score: ${riskScore.toFixed(0)}/100`, 15, 32);
+
+      // Embed Canvas Screenshot
+      const margin = 15;
+      const imgWidth = pageWidth - margin * 2;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', margin, 48, imgWidth, imgHeight);
+
+      // Render Text Data Below Image
+      let cursorY = 48 + imgHeight + 15;
+
+      const checkPageBreak = (neededHeight) => {
+        if (cursorY + neededHeight > pageHeight - 20) {
+          pdf.addPage();
+          cursorY = 20;
+        }
+      };
+
+      // 1. Contributing Factors
+      checkPageBreak(35);
+      pdf.setTextColor(244, 63, 94);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.text('Contributing Risk Factors', margin, cursorY);
+      cursorY += 8;
+
+      pdf.setTextColor(226, 232, 240);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+
+      if (simulationReport.length > 0) {
+        simulationReport.forEach((factor) => {
+          checkPageBreak(8);
+          const splitText = pdf.splitTextToSize(`• ${factor}`, imgWidth);
+          splitText.forEach((line) => {
+            pdf.text(line, margin, cursorY);
+            cursorY += 6;
+          });
+        });
+      } else {
+        pdf.text('No critical risk factors identified.', margin, cursorY);
+        cursorY += 8;
+      }
+
+      cursorY += 6;
+
+      // 2. Recommended Mitigations
+      checkPageBreak(35);
+      pdf.setTextColor(16, 185, 129);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.text('Recommended Mitigations', margin, cursorY);
+      cursorY += 8;
+
+      pdf.setTextColor(226, 232, 240);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+
+      if (remediationPlan.length > 0) {
+        remediationPlan.forEach((action) => {
+          checkPageBreak(8);
+          const splitText = pdf.splitTextToSize(`✓ ${action}`, imgWidth);
+          splitText.forEach((line) => {
+            pdf.text(line, margin, cursorY);
+            cursorY += 6;
+          });
+        });
+      } else {
+        pdf.text('No mitigations required.', margin, cursorY);
+        cursorY += 8;
+      }
+
+      pdf.save('AegisPath_Threat_Report.pdf');
+    } catch (err) {
+      console.error('[AegisPath] Failed to generate PDF Report:', err);
+    } finally {
+      // Restore UI overlays
+      setIsSidebarOpen(wasSidebarOpen);
+      setIsInspectorOpen(wasInspectorOpen);
+      setShowReport(wasReportOpen);
+    }
+  };
+
   // --- Derived values ---
   const activePersona = PERSONAS.find((p) => p.id === persona) || PERSONAS[0];
   const severityLabel = riskScore >= 70 ? 'CRITICAL' : riskScore >= 40 ? 'HIGH' : 'MODERATE';
@@ -730,6 +865,22 @@ export default function App() {
                   ) : (
                     <p className="factors-empty">No actions required.</p>
                   )}
+                </div>
+
+                {/* PDF Generation Action */}
+                <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex' }}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={generatePDFReport}
+                    style={{
+                      width: '100%',
+                      justifyContent: 'center',
+                      background: 'var(--accent-indigo)',
+                      borderColor: 'transparent',
+                    }}
+                  >
+                    Download Risk Report (PDF)
+                  </button>
                 </div>
               </div>
             </div>
