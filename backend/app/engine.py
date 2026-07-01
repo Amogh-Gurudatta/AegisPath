@@ -127,6 +127,8 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
         f"Simulated under attacker persona: {PERSONA_LABELS.get(persona, persona)}."
     )
     
+    recommended_actions = []
+    
     if path:
         for i, node_id in enumerate(path):
             node_model = next((n for n in graph_data.nodes if n.id == node_id), None)
@@ -143,6 +145,7 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
                     contributing_factors.append(f"Firewall {node_label} allowed malicious pivot traffic (wildcard IP enabled).")
                 else:
                     contributing_factors.append(f"Firewall {node_label} allowed malicious pivot traffic.")
+                recommended_actions.append(f"Review and restrict ACL rules on {node_label}; implement Zero Trust least-privilege access.")
             else:
                 risk_score += 20.0
                 cvss = config.get('cvss_score')
@@ -157,14 +160,17 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
                 if config.get('has_rce_vulnerability') is True:
                     risk_score += 30.0
                     contributing_factors.append(f"Critical RCE exploited on {node_label}")
+                    recommended_actions.append(f"Apply latest vendor security patches for node {node_label} immediately to mitigate RCE.")
                     
                 if config.get('has_weak_credentials') is True:
                     risk_score += 15.0
                     contributing_factors.append(f"Brute-forced weak credentials on {node_label}")
+                    recommended_actions.append(f"Enforce MFA and minimum password complexity policies on {node_label}.")
                     
                 if config.get('is_patched') is False:
                     risk_score += 10.0
                     contributing_factors.append(f"Missing security patches on host '{node_label}'.")
+                    recommended_actions.append(f"Apply latest vendor security patches for node {node_label} immediately to mitigate RCE.")
 
             # Inspect edge between node i-1 and node i
             if i > 0:
@@ -178,11 +184,17 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
                     if edge_config.get('unencrypted') is True or edge_config.get('is_unencrypted') is True:
                         risk_score += 15.0
                         contributing_factors.append(f"Cleartext traffic intercepted on link '{prev_label}' → '{node_label}'.")
+                        recommended_actions.append("Encrypt network links and enable TLS for all client-server communications.")
                         
         risk_score = min(100.0, max(0.0, risk_score))
+        
+    # Deduplicate while preserving order
+    seen = set()
+    deduped_actions = [x for x in recommended_actions if not (x in seen or seen.add(x))]
         
     return {
         "path": path,
         "contributing_factors": contributing_factors,
+        "recommended_actions": deduped_actions,
         "risk_score": risk_score
     }

@@ -32,6 +32,7 @@ class SimulationResponse(BaseModel):
     success: bool
     attack_path: List[str]
     contributing_factors: List[str]
+    recommended_actions: List[str] = []
     risk_score: float
     message: str
 

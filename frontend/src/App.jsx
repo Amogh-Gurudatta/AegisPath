@@ -205,6 +205,7 @@ export default function App() {
   const [simulationPath, setSimulationPath] = useState([]);
   const [contributingFactors, setContributingFactors] = useState([]);
   const [simulationReport, setSimulationReport] = useState([]);
+  const [remediationPlan, setRemediationPlan] = useState([]);
   const [riskScore, setRiskScore] = useState(0);
   const [showReport, setShowReport] = useState(false);
   const [persona, setPersona] = useState('standard');
@@ -488,11 +489,13 @@ export default function App() {
       if (result.success) {
         const path = result.attack_path || [];
         const factors = result.contributing_factors || [];
+        const remediations = result.recommended_actions || [];
         const score = result.risk_score ?? 0;
 
         setSimulationPath(path);
         setContributingFactors(factors);
         setSimulationReport(factors);
+        setRemediationPlan(remediations);
         setRiskScore(score);
 
         await runSequentialAnimation(path);
@@ -511,9 +514,15 @@ export default function App() {
         `Persona: "${PERSONAS.find((p) => p.id === persona)?.label}" applied (offline mode ignores persona weights).`,
       ];
 
+      const fallbackRemediations = [
+        "Verify local server connectivity and network infrastructure configuration.",
+        "Ensure uvicorn is running on port 8000 to fetch real-time mitigations."
+      ];
+
       setSimulationPath(dummyPath);
       setContributingFactors(fallbackFactors);
       setSimulationReport(fallbackFactors);
+      setRemediationPlan(fallbackRemediations);
       setRiskScore(45.0);
 
       await runSequentialAnimation(dummyPath);
@@ -531,6 +540,7 @@ export default function App() {
     setSimulationPath([]);
     setContributingFactors([]);
     setSimulationReport([]);
+    setRemediationPlan([]);
     setRiskScore(0);
     setShowReport(false);
     setPersona('standard');
@@ -699,6 +709,26 @@ export default function App() {
                     </ul>
                   ) : (
                     <p className="factors-empty">No critical risk factors found on this path.</p>
+                  )}
+                </div>
+
+                {/* Recommended Mitigations */}
+                <div className="remediations-section" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                  <h4 className="factors-title" style={{ color: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Shield size={12} />
+                    <span>Recommended Mitigations</span>
+                  </h4>
+                  {remediationPlan.length > 0 ? (
+                    <ul className="factors-list" style={{ marginTop: '8px' }}>
+                      {remediationPlan.map((action, idx) => (
+                        <li key={idx} className="factor-item" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                          <span className="bullet" style={{ color: 'var(--accent-emerald)' }}>✓</span>
+                          <span className="factor-text" style={{ color: 'var(--text-primary)' }}>{action}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="factors-empty">No actions required.</p>
                   )}
                 </div>
               </div>
