@@ -16,7 +16,7 @@ The backend is a high-performance asynchronous Python service that ingests a str
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── engine.py     # Core graph engine: stateful cost model, Dijkstra, risk scoring
+│   ├── engine.py     # Multi-path Dijkstra, stateful cost model, risk scoring, automated remediation mapper
 │   ├── main.py       # FastAPI application, CORS, and route definitions
 │   └── schemas.py    # Pydantic v2 data models for request/response validation
 ├── .gitignore
@@ -103,7 +103,10 @@ Accepts a `NetworkGraph` payload and returns a `SimulationResponse`.
 ```json
 {
   "success": true,
-  "attack_path": ["n1", "n2", "n3"],
+  "attack_paths": [
+    ["n1", "n2", "n3"],
+    ["n1", "n3"]
+  ],
   "contributing_factors": [
     "Simulated under attacker persona: APT Threat Group.",
     "Firewall Border Firewall allowed malicious pivot traffic.",
@@ -112,8 +115,8 @@ Accepts a `NetworkGraph` payload and returns a `SimulationResponse`.
     "Cleartext traffic intercepted on link 'Border Firewall' → 'Database Server'."
   ],
   "recommended_actions": [
-    "Review and restrict ACL rules on Border Firewall; implement Zero Trust least-privilege access.",
-    "Enforce MFA and minimum password complexity policies on Database Server.",
+    "Review ACL rules on Border Firewall; enforce Zero Trust least-privilege.",
+    "Enforce MFA and strict password complexity on Database Server.",
     "Encrypt network links and enable TLS for all client-server communications."
   ],
   "risk_score": 100.0,
@@ -148,19 +151,36 @@ Accepts a `NetworkGraph` payload and returns a `SimulationResponse`.
 
 ## Simulation Engine Internals
 
-1. **Graph Construction** — nodes and bidirectional edges are added to a `networkx.DiGraph`.
-2. **Weight Calculation** (`calculate_traversal_cost`) — edge weight is computed per-pair based on target/source parameters and attacker persona modifiers.
-3. **Pin Resolution** — checks for custom nodes containing `is_attacker_entry` or `is_target_asset` flags in config; falls back to `nodes[0]` (attacker origin) and `nodes[-1]` (target destination) respectively if flags are omitted.
-4. **Pathfinding** — `nx.shortest_path(weight='weight')` finds the minimum-cost route between the resolved entry and target nodes.
-5. **Risk Scoring & Remediation** — traverses the resolved path, accumulating a risk score (0–100), generating human-readable contributing factors, and constructing a list of deduplicated recommended mitigations.
+1. **Graph Construction** — all nodes and bidirectional edges are added to a `networkx.DiGraph` with dynamically computed per-edge weights.
+2. **Weight Calculation** (`calculate_traversal_cost`) — edge weight is computed per source→target pair, incorporating CVSS scores, firewall rules, IP whitelists, open port overlap, patch status, and attacker persona modifiers.
+3. **Pin Resolution** — reads `is_attacker_entry` and `is_target_asset` flags from node configs to resolve the start/end of the pathfinding problem; falls back to `nodes[0]` and `nodes[-1]` respectively if pins are absent.
+4. **Multi-Path Analysis** — uses `nx.shortest_simple_paths(weight='weight')` and `itertools.islice(..., 3)` to extract the **top 3 lowest-cost attack paths**. The primary path (index 0) is the most dangerous route; paths 1 and 2 are alternative lateral-movement options.
+5. **Risk Scoring** — traverses the primary path, accumulating a 0–100 clamped risk score based on: node type (+10 firewall / +20 endpoint), CVSS severity (×5), RCE presence (+30), weak credentials (+15), unpatched status (+10), and cleartext edges (+15).
+6. **Automated Remediation Mapper** — for each risk factor found on a compromised node, a corresponding remediation string is generated and deduplicated before being returned in `recommended_actions`.
 
 ---
 
 ## Attacker Persona Cost Model
 
-| Condition                  | Standard | Script Kiddie | APT      |
-| -------------------------- | -------- | ------------- | -------- |
-| Firewall (not whitelisted) | +9999    | +10499        | +10049   |
-| Firewall (whitelisted)     | 10       | 510           | 60       |
-| RCE vulnerability          | No bonus | **–99**       | No bonus |
-| Weak credentials           | No bonus | No bonus      | **–80**  |
+| Condition                  | Standard | Script Kiddie | APT    |
+| -------------------------- | -------- | ------------- | ------ |
+| Firewall (not whitelisted) | 9999     | 10499 (+500)  | 10049 (+50) |
+| Firewall (whitelisted)     | 10       | 510           | 60     |
+| RCE vulnerability present  | No bonus | **−99**       | No bonus |
+| Weak credentials present   | No bonus | No bonus      | **−80** |
+
+---
+
+## Risk Score Reference
+
+| Event | Points Added |
+|-------|--------------|
+| Firewall node traversed | +10 |
+| Server / workstation traversed | +20 |
+| CVSS score present | +(cvss × 5) |
+| RCE vulnerability | +30 |
+| Weak credentials | +15 |
+| Unpatched node (`is_patched: false`) | +10 |
+| Cleartext link (`unencrypted: true`) | +15 |
+
+Final score is **clamped to 0–100**.
