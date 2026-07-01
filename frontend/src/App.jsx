@@ -214,6 +214,121 @@ export default function App() {
     }
   }, [isInspectorOpen]);
 
+  const resetGraphStyles = () => {
+    setNodes((nds) => nds.map((n) => {
+      let baseStyle = {
+        background: 'rgba(2, 132, 199, 0.1)',
+        color: '#0284c7',
+        border: '2px solid rgba(2, 132, 199, 0.5)',
+        borderRadius: '8px',
+        padding: '10px',
+      };
+      if (n.id === 'node-1') {
+        baseStyle = {
+          background: '#1e293b',
+          color: '#94a3b8',
+          border: '2px solid #334155',
+          borderRadius: '8px',
+          padding: '10px',
+        };
+      } else if (n.nodeType === 'firewall') {
+        baseStyle = {
+          background: 'rgba(244, 63, 94, 0.1)',
+          color: '#f43f5e',
+          border: '2px solid rgba(244, 63, 94, 0.5)',
+          borderRadius: '8px',
+          padding: '10px',
+        };
+      } else if (n.nodeType === 'server') {
+        baseStyle = {
+          background: 'rgba(99, 102, 241, 0.1)',
+          color: '#6366f1',
+          border: '2px solid rgba(99, 102, 241, 0.5)',
+          borderRadius: '8px',
+          padding: '10px',
+        };
+      }
+      return {
+        ...n,
+        style: baseStyle,
+        className: ''
+      };
+    }));
+
+    setEdges((eds) => eds.map((e) => ({
+      ...e,
+      animated: false,
+      style: { stroke: '#475569', strokeWidth: 1 }
+    })));
+  };
+
+  const runSequentialAnimation = async (path) => {
+    resetGraphStyles();
+    
+    for (let i = 0; i < path.length; i++) {
+      const nodeId = path[i];
+
+      // 1. Change node's visual state to "analyzing" (yellow with pulse animation class)
+      setNodes((nds) => nds.map((n) => {
+        if (n.id === nodeId) {
+          return {
+            ...n,
+            style: {
+              ...n.style,
+              background: 'rgba(245, 158, 11, 0.25)', // Yellow amber
+              color: '#f59e0b',
+              border: '2px dashed #f59e0b',
+            },
+            className: 'analyzing-node'
+          };
+        }
+        return n;
+      }));
+
+      // Wait 400ms
+      await new Promise((r) => setTimeout(r, 400));
+
+      // 2. Change node's visual state to "compromised" (red)
+      setNodes((nds) => nds.map((n) => {
+        if (n.id === nodeId) {
+          return {
+            ...n,
+            style: {
+              ...n.style,
+              background: 'rgba(244, 63, 94, 0.25)', // Rose red
+              color: '#f43f5e',
+              border: '2px solid #f43f5e',
+              boxShadow: '0 0 15px rgba(244, 63, 94, 0.6)',
+            },
+            className: ''
+          };
+        }
+        return n;
+      }));
+
+      // Highlight/animate the incoming edge to this compromised node from the previous node
+      if (i > 0) {
+        const prevNodeId = path[i - 1];
+        setEdges((eds) => eds.map((e) => {
+          if (
+            (e.source === prevNodeId && e.target === nodeId) ||
+            (e.source === nodeId && e.target === prevNodeId)
+          ) {
+            return {
+              ...e,
+              animated: true,
+              style: { stroke: 'var(--accent-rose)', strokeWidth: 3 }
+            };
+          }
+          return e;
+        }));
+      }
+
+      // Delay between hops (800ms)
+      await new Promise((r) => setTimeout(r, 800));
+    }
+  };
+
   // Run threat path simulation against the Python backend
   const handleRunSimulation = async () => {
     setLoading(true);
@@ -246,60 +361,16 @@ export default function App() {
 
       const result = await response.json();
       if (result.success) {
-        setSimulationPath(result.attack_path);
-        
-        // Highlight active simulated path edges and nodes in the ReactFlow UI
-        const pathSet = new Set(result.attack_path);
-        
-        setNodes((nds) => nds.map((n) => {
-          if (pathSet.has(n.id)) {
-            return {
-              ...n,
-              style: {
-                ...n.style,
-                boxShadow: '0 0 15px rgba(244, 63, 94, 0.6)',
-                border: '2px solid var(--accent-rose)'
-              }
-            };
-          }
-          return n;
-        }));
-
-        setEdges((eds) => eds.map((e) => {
-          // Highlight connection if source and target are consecutive path nodes
-          const sourceIdx = result.attack_path.indexOf(e.source);
-          const targetIdx = result.attack_path.indexOf(e.target);
-          if (sourceIdx !== -1 && targetIdx !== -1 && Math.abs(sourceIdx - targetIdx) === 1) {
-            return {
-              ...e,
-              animated: true,
-              style: { stroke: 'var(--accent-rose)', strokeWidth: 3 }
-            };
-          }
-          return e;
-        }));
+        const compromised_path = result.attack_path || result.compromised_path || [];
+        setSimulationPath(compromised_path);
+        await runSequentialAnimation(compromised_path);
       }
     } catch (err) {
       console.warn('Backend server connection failed. Running simulation locally fallback...', err);
       // Fallback simulating locally if backend isn't actively run
       const dummyPath = nodes.length > 0 ? [nodes[0].id, nodes[nodes.length - 1].id] : [];
       setSimulationPath(dummyPath);
-      
-      const pathSet = new Set(dummyPath);
-      setNodes((nds) => nds.map((n) => {
-        if (pathSet.has(n.id)) {
-          return {
-            ...n,
-            style: {
-              ...n.style,
-              boxShadow: '0 0 15px rgba(244, 63, 94, 0.6)',
-              border: '2px solid var(--accent-rose)'
-            }
-          };
-        }
-        return n;
-      }));
-      
+      await runSequentialAnimation(dummyPath);
       setError("Backend connection skipped/unreachable. Simulation running in mock fallback mode.");
     } finally {
       setLoading(false);
