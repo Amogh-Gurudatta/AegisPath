@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   addEdge,
   useNodesState,
@@ -25,10 +25,12 @@ import {
   Zap,
   ChevronRight,
   Globe,
+  HelpCircle,
 } from 'lucide-react';
 import Canvas from './components/Canvas';
 import Inspector from './components/Inspector';
 import Sidebar from './components/Sidebar';
+import OnboardingTour from './components/OnboardingTour';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import './App.css';
@@ -217,6 +219,16 @@ export default function App() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const reactFlowWrapper = useRef(null);
   const nodeCounter = useRef(10);
+  const [runTour, setRunTour] = useState(false);
+  const [personaOpen, setPersonaOpen] = useState(false);
+
+  useEffect(() => {
+    const hasSeen = localStorage.getItem('aegispath_has_seen_tour');
+    if (!hasSeen) {
+      setRunTour(true);
+      localStorage.setItem('aegispath_has_seen_tour', 'true');
+    }
+  }, []);
 
   const updateNodeConfig = (nodeId, newConfig) => {
     setNodes((nds) =>
@@ -768,24 +780,120 @@ export default function App() {
         </div>
 
         <div className="header-actions">
-          {/* Persona selector */}
-          <div className="persona-selector">
+          {/* Persona selector — custom themed dropdown */}
+          <div
+            className="persona-selector"
+            style={{ position: 'relative', cursor: loading ? 'not-allowed' : 'pointer' }}
+            onClick={() => !loading && setPersonaOpen((v) => !v)}
+          >
             <activePersona.icon size={14} style={{ color: activePersona.color, flexShrink: 0 }} />
-            <select
-              className="persona-select"
-              value={persona}
-              onChange={(e) => setPersona(e.target.value)}
-              disabled={loading}
-            >
-              {PERSONAS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', userSelect: 'none', whiteSpace: 'nowrap' }}>
+              {activePersona.label}
+            </span>
+            <ChevronRight
+              size={13}
+              style={{
+                color: 'var(--text-muted)',
+                transform: personaOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s',
+                marginLeft: '2px',
+              }}
+            />
+
+            {personaOpen && (
+              <>
+                {/* Click-away backdrop */}
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+                  onClick={(e) => { e.stopPropagation(); setPersonaOpen(false); }}
+                />
+                {/* Dropdown panel */}
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  left: 0,
+                  zIndex: 9999,
+                  minWidth: '260px',
+                  background: 'rgba(13, 16, 23, 0.97)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: '0 20px 48px -8px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.1)',
+                  backdropFilter: 'blur(20px)',
+                  overflow: 'hidden',
+                  padding: '6px',
+                }}>
+                  <div style={{
+                    padding: '6px 10px 8px',
+                    borderBottom: '1px solid var(--border-color)',
+                    marginBottom: '4px',
+                  }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                      Attacker Persona
+                    </span>
+                  </div>
+                  {PERSONAS.map((p) => {
+                    const isActive = persona === p.id;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={(e) => { e.stopPropagation(); setPersona(p.id); setPersonaOpen(false); }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '10px 12px',
+                          borderRadius: 'var(--radius-sm)',
+                          cursor: 'pointer',
+                          background: isActive ? `${p.color}14` : 'transparent',
+                          border: isActive ? `1px solid ${p.color}30` : '1px solid transparent',
+                          transition: 'background 0.15s, border-color 0.15s',
+                          marginBottom: '2px',
+                        }}
+                        onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
+                        onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        {/* Colored icon badge */}
+                        <div style={{
+                          width: 32, height: 32, borderRadius: '8px', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: `${p.color}18`,
+                          border: `1px solid ${p.color}35`,
+                        }}>
+                          <p.icon size={15} style={{ color: p.color }} />
+                        </div>
+                        {/* Label + description */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: isActive ? p.color : 'var(--text-primary)', marginBottom: '2px' }}>
+                            {p.label}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {p.description}
+                          </div>
+                        </div>
+                        {/* Active check */}
+                        {isActive && (
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: p.color, flexShrink: 0, boxShadow: `0 0 8px ${p.color}` }} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="header-divider" />
+
+          <button
+            className="btn view-tour-btn"
+            id="view-tour-btn"
+            onClick={() => setRunTour(true)}
+            title="View onboarding tour"
+            disabled={loading}
+          >
+            <HelpCircle size={16} />
+            <span className="btn-label">View Tour</span>
+          </button>
 
           <button
             className="btn"
@@ -802,7 +910,7 @@ export default function App() {
           </button>
 
           <button
-            className="btn btn-primary"
+            className="btn btn-primary simulate-btn"
             onClick={handleRunSimulation}
             disabled={loading}
             title="Run attack path simulation"
@@ -946,6 +1054,7 @@ export default function App() {
           simulationPath={primaryPath}
           updateNodeConfig={updateNodeConfig}
         />
+        {runTour && <OnboardingTour run={runTour} setRun={setRunTour} />}
       </main>
     </div>
   );

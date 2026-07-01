@@ -57,7 +57,7 @@ export default function Inspector({
   };
 
   return (
-    <aside className={`inspector ${isInspectorOpen ? '' : 'collapsed'}`}>
+    <aside className={`inspector inspector-panel ${isInspectorOpen ? '' : 'collapsed'}`}>
       <div className="inspector-header">
         <h3 className="inspector-title">Node Inspector</h3>
         <button
