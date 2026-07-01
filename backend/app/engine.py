@@ -133,10 +133,10 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
     )
     
     REMEDIATION_MAP = {
-        "has_rce_vulnerability": "Apply latest vendor security patches for node {node_label} immediately to mitigate RCE.",
-        "has_weak_credentials": "Enforce MFA and minimum password complexity policies on {node_label}.",
-        "is_patched_false": "Apply latest vendor security patches for node {node_label} immediately to mitigate RCE.",
-        "firewall": "Review and restrict ACL rules on {node_label}; implement Zero Trust least-privilege access."
+        "has_rce_vulnerability": "Apply critical vendor security patches for node {node_label}.",
+        "has_weak_credentials": "Enforce MFA and strict password complexity on {node_label}.",
+        "is_patched_false": "Apply critical vendor security patches for node {node_label}.",
+        "firewall": "Review ACL rules on {node_label}; enforce Zero Trust least-privilege."
     }
     
     recommended_actions = []
