@@ -47,13 +47,18 @@ def calculate_traversal_cost(source_node: dict, target_node: dict) -> int:
                 
     return max(1, int(cost))
 
-def compute_attack_path(graph_data: NetworkGraph) -> List[str]:
+def compute_attack_path(graph_data: NetworkGraph) -> dict:
     """
     Computes potential lateral movement/attack paths across the network topology.
     Utilizes Dijkstra's shortest path algorithm on dynamically weighted stateful edges.
+    Returns a dictionary with the computed path, contributing factors, and risk score.
     """
     if not graph_data.nodes or not graph_data.edges:
-        return []
+        return {
+            "path": [],
+            "contributing_factors": [],
+            "risk_score": 0.0
+        }
         
     di_graph = nx.DiGraph()
     
@@ -83,6 +88,68 @@ def compute_attack_path(graph_data: NetworkGraph) -> List[str]:
     
     try:
         path = nx.shortest_path(di_graph, source=attacker_node, target=target_node, weight='weight')
-        return path
     except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return []
+        path = []
+        
+    # Compute contributing factors and risk score
+    risk_score = 0.0
+    contributing_factors = []
+    
+    if path:
+        for i, node_id in enumerate(path):
+            node_model = next((n for n in graph_data.nodes if n.id == node_id), None)
+            if not node_model:
+                continue
+                
+            config = node_model.config or {}
+            node_label = node_model.label or node_id
+            
+            if node_model.type == 'firewall':
+                risk_score += 10.0
+                allowed_ips = config.get('allowed_ips', [])
+                if '0.0.0.0/0' in allowed_ips:
+                    contributing_factors.append(f"Firewall '{node_label}' allows wildcard IP (0.0.0.0/0) traffic.")
+                else:
+                    contributing_factors.append(f"Firewall '{node_label}' bypassed via whitelisted IP rule.")
+            else:
+                risk_score += 20.0
+                cvss = config.get('cvss_score')
+                if cvss is not None:
+                    cvss_val = float(cvss)
+                    risk_score += cvss_val * 5.0
+                    if cvss_val >= 7.0:
+                        contributing_factors.append(f"High CVSS vulnerability ({cvss_val}) detected on host '{node_label}'.")
+                    elif cvss_val > 0.0:
+                        contributing_factors.append(f"Vulnerability with CVSS score {cvss_val} present on host '{node_label}'.")
+                        
+                if config.get('has_rce_vulnerability') is True:
+                    risk_score += 30.0
+                    contributing_factors.append(f"Critical RCE exploited on node '{node_label}'.")
+                    
+                if config.get('has_weak_credentials') is True:
+                    risk_score += 15.0
+                    contributing_factors.append(f"Weak credentials identified on node '{node_label}'.")
+                    
+                if config.get('is_patched') is False:
+                    risk_score += 10.0
+                    contributing_factors.append(f"Missing security patches on host '{node_label}'.")
+
+            # Inspect edge between node i-1 and node i
+            if i > 0:
+                prev_node_id = path[i - 1]
+                edge_model = next((e for e in graph_data.edges if 
+                                   (e.source == prev_node_id and e.target == node_id) or
+                                   (e.source == node_id and e.target == prev_node_id)), None)
+                if edge_model:
+                    edge_config = edge_model.config or {}
+                    if edge_config.get('unencrypted') is True or edge_config.get('is_unencrypted') is True:
+                        risk_score += 15.0
+                        contributing_factors.append(f"Cleartext traffic intercepted on connection between '{prev_node_id}' and '{node_id}'.")
+                        
+        risk_score = min(100.0, max(0.0, risk_score))
+        
+    return {
+        "path": path,
+        "contributing_factors": contributing_factors,
+        "risk_score": risk_score
+    }

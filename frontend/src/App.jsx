@@ -115,6 +115,9 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
   const [simulationPath, setSimulationPath] = useState([]);
+  const [contributingFactors, setContributingFactors] = useState([]);
+  const [riskScore, setRiskScore] = useState(0);
+  const [showReport, setShowReport] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
@@ -333,6 +336,7 @@ export default function App() {
   const handleRunSimulation = async () => {
     setLoading(true);
     setError(null);
+    setShowReport(false);
     try {
       // Map ReactFlow graph nodes/edges into our strict Pydantic models structure
       const payload = {
@@ -345,7 +349,8 @@ export default function App() {
         edges: edges.map(e => ({
           id: e.id,
           source: e.source,
-          target: e.target
+          target: e.target,
+          config: e.config || {}
         }))
       };
 
@@ -362,15 +367,30 @@ export default function App() {
       const result = await response.json();
       if (result.success) {
         const compromised_path = result.attack_path || result.compromised_path || [];
+        const factors = result.contributing_factors || [];
+        const score = result.risk_score || 0;
+
         setSimulationPath(compromised_path);
+        setContributingFactors(factors);
+        setRiskScore(score);
+        
         await runSequentialAnimation(compromised_path);
+        setShowReport(true);
       }
     } catch (err) {
       console.warn('Backend server connection failed. Running simulation locally fallback...', err);
       // Fallback simulating locally if backend isn't actively run
       const dummyPath = nodes.length > 0 ? [nodes[0].id, nodes[nodes.length - 1].id] : [];
       setSimulationPath(dummyPath);
+      setContributingFactors([
+        "Backend connection unavailable; loaded local fallback path.",
+        "Ensure uvicorn is running on port 8000 to enable dynamic stateful cost scoring.",
+        `Graph traversal contains ${dummyPath.length} hops.`
+      ]);
+      setRiskScore(45.0);
+      
       await runSequentialAnimation(dummyPath);
+      setShowReport(true);
       setError("Backend connection skipped/unreachable. Simulation running in mock fallback mode.");
     } finally {
       setLoading(false);
@@ -381,6 +401,9 @@ export default function App() {
     setNodes(initialNodes);
     setEdges(initialEdges);
     setSimulationPath([]);
+    setContributingFactors([]);
+    setRiskScore(0);
+    setShowReport(false);
     setSelectedNode(null);
     setError(null);
   };
@@ -534,6 +557,50 @@ export default function App() {
               onInit={setReactFlowInstance}
             />
           </ReactFlowProvider>
+
+          {/* Simulation Report Overlay Panel */}
+          {showReport && (
+            <div className="simulation-report-panel">
+              <div className="report-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertTriangle className="report-icon" size={18} />
+                  <h3>Risk Assessment Report</h3>
+                </div>
+                <button className="close-report-btn" onClick={() => setShowReport(false)}>
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="report-body">
+                <div className="score-section">
+                  <div className="score-gauge" style={{ borderColor: riskScore >= 70 ? 'var(--accent-rose)' : riskScore >= 40 ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>
+                    <span className="score-value">{riskScore.toFixed(0)}</span>
+                    <span className="score-label">Risk Score</span>
+                  </div>
+                  <div className="score-meta">
+                    <h4 style={{ color: riskScore >= 70 ? 'var(--accent-rose)' : riskScore >= 40 ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>
+                      Severity: {riskScore >= 70 ? 'CRITICAL' : riskScore >= 40 ? 'HIGH' : 'MODERATE'}
+                    </h4>
+                    <p>Total traversed hops: {simulationPath.length}</p>
+                  </div>
+                </div>
+                <div className="factors-section">
+                  <h4>Contributing Risk Factors</h4>
+                  {contributingFactors.length > 0 ? (
+                    <ul className="factors-list">
+                      {contributingFactors.map((factor, idx) => (
+                        <li key={idx} className="factor-item">
+                          <span className="bullet" style={{ color: riskScore >= 70 ? 'var(--accent-rose)' : 'var(--accent-amber)' }}>•</span>
+                          <span className="factor-text">{factor}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No high-risk factors identified on this path.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Selected Component Inspector Panel */}

@@ -20,7 +20,16 @@ class EdgeModel(BaseModel):
     id: str = Field(..., description="Unique identifier for the edge")
     source: str = Field(..., description="Source node ID")
     target: str = Field(..., description="Target node ID")
+    config: Dict[str, Any] = Field(default_factory=dict, description="Configuration settings specific to this edge")
 
 class NetworkGraph(BaseModel):
     nodes: List[NodeModel] = Field(default_factory=list, description="List of threat topology nodes")
     edges: List[EdgeModel] = Field(default_factory=list, description="List of directed network connections/edges")
+
+class SimulationResponse(BaseModel):
+    success: bool
+    attack_path: List[str]
+    contributing_factors: List[str]
+    risk_score: float
+    message: str
+

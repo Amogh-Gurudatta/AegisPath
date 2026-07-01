@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.schemas import NetworkGraph
+from app.schemas import NetworkGraph, SimulationResponse
 from app.engine import compute_attack_path
 
 app = FastAPI(
@@ -23,16 +23,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/api/simulate")
+@app.post("/api/simulate", response_model=SimulationResponse)
 def simulate_topology(graph_data: NetworkGraph):
     """
     Accepts network graph data payload, populates the topology engine,
     and returns simulated lateral attack paths.
     """
-    path = compute_attack_path(graph_data)
+    result = compute_attack_path(graph_data)
     return {
         "success": True,
-        "attack_path": path,
+        "attack_path": result["path"],
+        "contributing_factors": result["contributing_factors"],
+        "risk_score": result["risk_score"],
         "message": f"Successfully simulated graph containing {len(graph_data.nodes)} nodes and {len(graph_data.edges)} edges."
     }
 
@@ -42,3 +44,4 @@ def health_check():
     Service health check endpoint.
     """
     return {"status": "healthy"}
+
