@@ -1,9 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { 
   addEdge, 
   useNodesState, 
   useEdgesState, 
-  MarkerType 
+  MarkerType,
+  ReactFlowProvider,
+  useReactFlow
 } from 'reactflow';
 import { 
   Shield, 
@@ -115,6 +117,84 @@ export default function App() {
   const [simulationPath, setSimulationPath] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  const reactFlowWrapper = useRef(null);
+
+  const onDragStart = (event, nodeType) => {
+    event.dataTransfer.setData('application/reactflow', nodeType);
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const onDragOver = useCallback((event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const onDrop = useCallback(
+    (event) => {
+      event.preventDefault();
+
+      if (!reactFlowWrapper.current || !reactFlowInstance) return;
+
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const type = event.dataTransfer.getData('application/reactflow');
+
+      // check if the dropped element is valid
+      if (typeof type === 'undefined' || !type) {
+        return;
+      }
+
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+
+      const newNodeId = `node-${Date.now()}`;
+      
+      // Determine default styling based on node type
+      let style = {
+        background: 'rgba(2, 132, 199, 0.1)',
+        color: '#0284c7',
+        border: '2px solid rgba(2, 132, 199, 0.5)',
+        borderRadius: '8px',
+        padding: '10px',
+      };
+      if (type === 'firewall') {
+        style = {
+          background: 'rgba(244, 63, 94, 0.1)',
+          color: '#f43f5e',
+          border: '2px solid rgba(244, 63, 94, 0.5)',
+          borderRadius: '8px',
+          padding: '10px',
+        };
+      } else if (type === 'server') {
+        style = {
+          background: 'rgba(99, 102, 241, 0.1)',
+          color: '#6366f1',
+          border: '2px solid rgba(99, 102, 241, 0.5)',
+          borderRadius: '8px',
+          padding: '10px',
+        };
+      }
+
+      const newNode = {
+        id: newNodeId,
+        type: 'default',
+        position,
+        data: { label: `${type.charAt(0).toUpperCase() + type.slice(1)} Node` },
+        style,
+        nodeType: type,
+        config: { 
+          is_patched: true, 
+          has_rce_vulnerability: false,
+          ip: `192.168.1.${Math.floor(Math.random() * 254) + 1}`
+        },
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [reactFlowInstance, setNodes]
+  );
 
   // Hook triggered when drawing edges on the canvas
   const onConnect = useCallback(
@@ -282,7 +362,11 @@ export default function App() {
           <div className="sidebar-section">
             <h4 className="section-title">Network Nodes</h4>
             <div className="node-palette-list">
-              <div className="palette-item">
+              <div 
+                className="palette-item"
+                draggable
+                onDragStart={(event) => onDragStart(event, 'firewall')}
+              >
                 <div className="palette-icon-wrapper palette-icon-firewall">
                   <Shield size={18} />
                 </div>
@@ -292,7 +376,11 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="palette-item">
+              <div 
+                className="palette-item"
+                draggable
+                onDragStart={(event) => onDragStart(event, 'server')}
+              >
                 <div className="palette-icon-wrapper palette-icon-server">
                   <Server size={18} />
                 </div>
@@ -302,7 +390,11 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="palette-item">
+              <div 
+                className="palette-item"
+                draggable
+                onDragStart={(event) => onDragStart(event, 'default')}
+              >
                 <div className="palette-icon-wrapper palette-icon-workstation">
                   <Laptop size={18} />
                 </div>
@@ -354,15 +446,23 @@ export default function App() {
         </aside>
 
         {/* Central Intersecting Workspace Canvas */}
-        <section className="canvas-container">
-          <Canvas 
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onNodeClick={onNodeClick}
-          />
+        <section 
+          className="canvas-container"
+          ref={reactFlowWrapper}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+        >
+          <ReactFlowProvider>
+            <Canvas 
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onNodeClick={onNodeClick}
+              onInit={setReactFlowInstance}
+            />
+          </ReactFlowProvider>
         </section>
 
         {/* Selected Component Inspector Panel */}

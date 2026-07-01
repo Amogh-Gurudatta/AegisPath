@@ -27,6 +27,7 @@ export default function Canvas({
   onEdgesChange,
   onConnect,
   onNodeClick,
+  onInit,
 }) {
   return (
     <div className="canvas-container" style={{ width: '100%', height: '100%' }}>
@@ -37,6 +38,7 @@ export default function Canvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onInit={onInit}
         fitView
         attributionPosition="bottom-right"
       >
