@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import Canvas from './components/Canvas';
 import Inspector from './components/Inspector';
+import Sidebar from './components/Sidebar';
 import './App.css';
 
 // --- Node style helpers ---
@@ -241,6 +242,42 @@ export default function App() {
       }
       return prev;
     });
+  };
+
+  const exportGraph = () => {
+    const data = {
+      nodes,
+      edges,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'aegispath-topology.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const importGraph = (jsonString) => {
+    try {
+      const parsed = JSON.parse(jsonString);
+      if (parsed && Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+        setNodes(parsed.nodes);
+        setEdges(parsed.edges);
+        setSimulationPath([]);
+        setContributingFactors([]);
+        setRiskScore(0);
+        setShowReport(false);
+        setError(null);
+      } else {
+        setError('Invalid topology JSON structure.');
+      }
+    } catch (e) {
+      console.error(e);
+      setError('Failed to parse topology JSON file.');
+    }
   };
 
   // --- Drag & Drop ---
@@ -576,89 +613,16 @@ export default function App() {
 
       {/* ── Main workspace ── */}
       <main className="dashboard-main">
-        {/* Sidebar */}
-        <aside className={`sidebar ${isSidebarOpen ? '' : 'collapsed'}`}>
-          <div className="sidebar-header">
-            <h3 className="sidebar-title">Component Library</h3>
-          </div>
-
-          {/* Palette */}
-          <div className="sidebar-section">
-            <h4 className="section-label">Drag to Canvas</h4>
-            <div className="node-palette-list">
-              {[
-                { type: 'firewall', label: 'Firewall Guard', sub: 'Filters & controls traffic', cls: 'palette-icon-firewall', Icon: Shield },
-                { type: 'server', label: 'Enterprise Server', sub: 'Hosts services & databases', cls: 'palette-icon-server', Icon: Server },
-                { type: 'default', label: 'User Workstation', sub: 'Endpoint & lateral pivot', cls: 'palette-icon-workstation', Icon: Laptop },
-              ].map(({ type, label, sub, cls, Icon }) => (
-                <div
-                  key={type}
-                  className="palette-item"
-                  draggable
-                  onDragStart={(e) => onDragStart(e, type)}
-                >
-                  <div className={`palette-icon-wrapper ${cls}`}>
-                    <Icon size={16} />
-                  </div>
-                  <div className="palette-details">
-                    <h4>{label}</h4>
-                    <p>{sub}</p>
-                  </div>
-                  <ChevronRight size={14} className="palette-chevron" />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Active persona info */}
-          <div className="sidebar-section">
-            <h4 className="section-label">Active Persona</h4>
-            <div className="persona-card" style={{ borderColor: activePersona.color + '44' }}>
-              <div className="persona-card-icon" style={{ color: activePersona.color, background: activePersona.color + '18' }}>
-                <activePersona.icon size={16} />
-              </div>
-              <div>
-                <p className="persona-card-name" style={{ color: activePersona.color }}>{activePersona.label}</p>
-                <p className="persona-card-desc">{activePersona.description}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Simulation trace */}
-          <div className="sidebar-section sidebar-section--grow">
-            <h4 className="section-label">Attack Trace</h4>
-            <div className="trace-panel">
-              {error && (
-                <div className="trace-warning">
-                  <AlertTriangle size={13} />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {simulationPath.length > 0 ? (
-                <div>
-                  <div className="trace-found">
-                    <TrendingUp size={13} />
-                    <span>Lateral movement resolved</span>
-                  </div>
-                  <div className="path-container">
-                    {simulationPath.map((nodeId, idx) => {
-                      const n = nodes.find((nd) => nd.id === nodeId);
-                      return (
-                        <div key={nodeId} className="path-step">
-                          <span className="path-step-badge">{idx + 1}</span>
-                          <span className="path-step-label">{n ? n.data.label : nodeId}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <p className="trace-empty">No simulation yet. Press <strong>Run Simulation</strong> to begin.</p>
-              )}
-            </div>
-          </div>
-        </aside>
+        <Sidebar
+          isSidebarOpen={isSidebarOpen}
+          onDragStart={onDragStart}
+          activePersona={activePersona}
+          error={error}
+          simulationPath={simulationPath}
+          nodes={nodes}
+          exportGraph={exportGraph}
+          importGraph={importGraph}
+        />
 
         {/* Canvas */}
         <section
