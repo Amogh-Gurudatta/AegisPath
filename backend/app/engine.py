@@ -99,8 +99,12 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
             weight_backward = calculate_traversal_cost(target_dict, source_dict, persona)
             di_graph.add_edge(edge.target, edge.source, weight=weight_backward)
             
-    attacker_node = graph_data.nodes[0].id
-    target_node = graph_data.nodes[-1].id
+    # Resolve attacker entry point and high-value target from configuration pins
+    attacker_node_model = next((n for n in graph_data.nodes if n.config.get('is_attacker_entry') is True), None)
+    attacker_node = attacker_node_model.id if attacker_node_model else graph_data.nodes[0].id
+    
+    target_node_model = next((n for n in graph_data.nodes if n.config.get('is_target_asset') is True), None)
+    target_node = target_node_model.id if target_node_model else graph_data.nodes[-1].id
     
     try:
         path = nx.shortest_path(di_graph, source=attacker_node, target=target_node, weight='weight')

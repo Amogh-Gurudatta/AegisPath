@@ -34,6 +34,28 @@ export default function Inspector({
   simulationPath = [],
   updateNodeConfig,
 }) {
+  const renderReadOnlySpecs = () => {
+    if (!selectedNode || !selectedNode.config) return null;
+    const editKeys = ['ip_address', 'cvss_score', 'is_patched', 'has_rce_vulnerability', 'is_attacker_entry', 'is_target_asset'];
+    const otherConfigs = Object.entries(selectedNode.config).filter(([key]) => !editKeys.includes(key));
+    
+    if (otherConfigs.length === 0) return null;
+    
+    return (
+      <div className="inspector-section">
+        <h4 className="inspector-section-title">System Specs</h4>
+        <div className="metadata-table">
+          {otherConfigs.map(([key, val]) => (
+            <div key={key} className="metadata-row">
+              <span className="metadata-key">{key}</span>
+              <span className="metadata-val">{formatConfigValue(val)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <aside className={`inspector ${isInspectorOpen ? '' : 'collapsed'}`}>
       <div className="inspector-header">
@@ -61,25 +83,112 @@ export default function Inspector({
               </div>
             </div>
 
-            {/* Metadata table */}
+            {/* Source/Target Entry and Asset Pins */}
+            <div className="inspector-section" style={{ borderTop: 'none', paddingTop: 0 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label className="checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!selectedNode.config?.is_attacker_entry}
+                    onChange={(e) => updateNodeConfig(selectedNode.id, { is_attacker_entry: e.target.checked })}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Set as Attacker Entry Point</span>
+                </label>
+                <label className="checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!selectedNode.config?.is_target_asset}
+                    onChange={(e) => updateNodeConfig(selectedNode.id, { is_target_asset: e.target.checked })}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Set as High-Value Target</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Live Configuration Editor Form */}
             <div className="inspector-section">
-              <h4 className="inspector-section-title">Configuration</h4>
-              <div className="metadata-table">
-                <div className="metadata-row">
+              <h4 className="inspector-section-title">Configuration Editor</h4>
+              <div className="metadata-table" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Node ID (Read-only) */}
+                <div className="metadata-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span className="metadata-key">Node ID</span>
                   <span className="metadata-val metadata-val--mono">{selectedNode.id}</span>
                 </div>
-                {selectedNode.config &&
-                  Object.entries(selectedNode.config).map(([key, val]) => (
-                    <div key={key} className="metadata-row">
-                      <span className="metadata-key">{key}</span>
-                      <span className={`metadata-val ${typeof val === 'boolean' ? (val ? 'metadata-val--danger' : 'metadata-val--safe') : ''}`}>
-                        {formatConfigValue(val)}
+
+                {/* IP Address Input */}
+                <div className="metadata-row" style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderBottom: 'none' }}>
+                  <span className="metadata-key">IP Address</span>
+                  <input
+                    type="text"
+                    placeholder="192.168.1.x"
+                    value={selectedNode.config?.ip_address || selectedNode.config?.ip || ''}
+                    onChange={(e) => updateNodeConfig(selectedNode.id, { ip_address: e.target.value })}
+                    style={{
+                      background: 'var(--bg-primary)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-primary)',
+                      borderRadius: '6px',
+                      padding: '8px 12px',
+                      fontSize: '13px',
+                      width: '100%',
+                      outline: 'none',
+                      fontFamily: 'var(--font-mono)'
+                    }}
+                  />
+                </div>
+
+                {/* CVSS Score (Range Slider) - hide for firewall */}
+                {selectedNode.nodeType !== 'firewall' && (
+                  <div className="metadata-row" style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderBottom: 'none' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                      <span className="metadata-key">CVSS Score</span>
+                      <span className="metadata-val" style={{ color: 'var(--accent-amber)', fontWeight: 'bold', fontFamily: 'var(--font-mono)' }}>
+                        {(selectedNode.config?.cvss_score ?? 0).toFixed(1)}
                       </span>
                     </div>
-                  ))}
+                    <input
+                      type="range"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={selectedNode.config?.cvss_score ?? 0}
+                      onChange={(e) => updateNodeConfig(selectedNode.id, { cvss_score: parseFloat(e.target.value) })}
+                      style={{ width: '100%', accentColor: 'var(--accent-amber)', cursor: 'pointer' }}
+                    />
+                  </div>
+                )}
+
+                {/* Checkboxes for Patched & RCE Vulnerability - hide for firewall */}
+                {selectedNode.nodeType !== 'firewall' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
+                    <label className="checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!selectedNode.config?.is_patched}
+                        onChange={(e) => updateNodeConfig(selectedNode.id, { is_patched: e.target.checked })}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <span>Is Patched</span>
+                    </label>
+
+                    <label className="checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!selectedNode.config?.has_rce_vulnerability}
+                        onChange={(e) => updateNodeConfig(selectedNode.id, { has_rce_vulnerability: e.target.checked })}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <span>Has RCE Vulnerability</span>
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Read-Only System specs */}
+            {renderReadOnlySpecs()}
 
             {/* Simulation status for this node */}
             {simulationPath.length > 0 && (
