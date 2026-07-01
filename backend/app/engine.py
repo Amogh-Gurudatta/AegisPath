@@ -140,9 +140,9 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
                 risk_score += 10.0
                 allowed_ips = config.get('allowed_ips', [])
                 if '0.0.0.0/0' in allowed_ips:
-                    contributing_factors.append(f"Firewall '{node_label}' allows wildcard IP (0.0.0.0/0) traffic.")
+                    contributing_factors.append(f"Firewall {node_label} allowed malicious pivot traffic (wildcard IP enabled).")
                 else:
-                    contributing_factors.append(f"Firewall '{node_label}' bypassed via whitelisted IP rule.")
+                    contributing_factors.append(f"Firewall {node_label} allowed malicious pivot traffic.")
             else:
                 risk_score += 20.0
                 cvss = config.get('cvss_score')
@@ -156,11 +156,11 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
                         
                 if config.get('has_rce_vulnerability') is True:
                     risk_score += 30.0
-                    contributing_factors.append(f"Critical RCE exploited on node '{node_label}'.")
+                    contributing_factors.append(f"Critical RCE exploited on {node_label}")
                     
                 if config.get('has_weak_credentials') is True:
                     risk_score += 15.0
-                    contributing_factors.append(f"Weak credentials identified on node '{node_label}'.")
+                    contributing_factors.append(f"Brute-forced weak credentials on {node_label}")
                     
                 if config.get('is_patched') is False:
                     risk_score += 10.0

@@ -10,6 +10,7 @@ export default function Sidebar({
   nodes = [],
   exportGraph,
   importGraph,
+  simulationReport = [],
 }) {
   const fileInputRef = useRef(null);
 
@@ -104,6 +105,20 @@ export default function Sidebar({
                   );
                 })}
               </div>
+
+              {simulationReport && simulationReport.length > 0 && (
+                <div style={{ marginTop: '14px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                  <h5 style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Contributing Factors</h5>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {simulationReport.map((factor, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                        <AlertTriangle size={12} style={{ color: 'var(--accent-amber)', flexShrink: 0, marginTop: '2px' }} />
+                        <span>{factor}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <p className="trace-empty">No simulation yet. Press <strong>Run Simulation</strong> to begin.</p>

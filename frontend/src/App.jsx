@@ -204,6 +204,7 @@ export default function App() {
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
   const [simulationPath, setSimulationPath] = useState([]);
   const [contributingFactors, setContributingFactors] = useState([]);
+  const [simulationReport, setSimulationReport] = useState([]);
   const [riskScore, setRiskScore] = useState(0);
   const [showReport, setShowReport] = useState(false);
   const [persona, setPersona] = useState('standard');
@@ -491,6 +492,7 @@ export default function App() {
 
         setSimulationPath(path);
         setContributingFactors(factors);
+        setSimulationReport(factors);
         setRiskScore(score);
 
         await runSequentialAnimation(path);
@@ -503,12 +505,15 @@ export default function App() {
       const dummyPath =
         nodes.length >= 2 ? nodes.map((n) => n.id) : [];
 
-      setSimulationPath(dummyPath);
-      setContributingFactors([
+      const fallbackFactors = [
         'Backend server unreachable — running offline fallback simulation.',
         'Start the FastAPI server on port 8000 for live stateful analysis.',
         `Persona: "${PERSONAS.find((p) => p.id === persona)?.label}" applied (offline mode ignores persona weights).`,
-      ]);
+      ];
+
+      setSimulationPath(dummyPath);
+      setContributingFactors(fallbackFactors);
+      setSimulationReport(fallbackFactors);
       setRiskScore(45.0);
 
       await runSequentialAnimation(dummyPath);
@@ -525,6 +530,7 @@ export default function App() {
     setEdges(initialEdges);
     setSimulationPath([]);
     setContributingFactors([]);
+    setSimulationReport([]);
     setRiskScore(0);
     setShowReport(false);
     setPersona('standard');
@@ -622,6 +628,7 @@ export default function App() {
           nodes={nodes}
           exportGraph={exportGraph}
           importGraph={importGraph}
+          simulationReport={simulationReport}
         />
 
         {/* Canvas */}
