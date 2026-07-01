@@ -2,53 +2,59 @@ import networkx as nx
 from typing import List
 from app.schemas import NetworkGraph
 
+def calculate_traversal_cost(node_type: str, config: dict) -> int:
+    """
+    Calculates the traversal cost (edge weight) to reach a target node 
+    based on its type and security configuration.
+    """
+    # Base costs by node type
+    base_costs = {
+        'firewall': 200,
+        'server': 100,
+        'workstation': 50,
+        'default': 10
+    }
+    
+    # Retrieve cost (case-insensitive) falling back to 10 for unknown types
+    cost = base_costs.get(node_type.lower(), 10)
+    
+    # Dynamic modifiers based on configuration
+    if config.get('has_rce_vulnerability') is True:
+        cost -= 90
+    if config.get('has_weak_credentials') is True:
+        cost -= 40
+    if config.get('is_patched') is True:
+        cost += 50
+        
+    return max(1, cost)
+
 def compute_attack_path(graph_data: NetworkGraph) -> List[str]:
     """
     Computes potential lateral movement/attack paths across the network topology.
-    
-    Currently initializes a NetworkX directed graph structure, loads the validated 
-    nodes and edges from the incoming payload, and plans to utilize Dijkstra's 
-    shortest path algorithm to calculate lateral threat propagation paths.
-    
-    Future Dijkstra implementation details:
-    - Nodes can be weighted based on vulnerability score, complexity, or network exposure.
-    - Edges can be weighted based on traffic access controls (e.g. firewalls blocking specific ports).
-    - Dijkstra's shortest path will find the path of least resistance (lowest cost / highest probability of success)
-      from an entrypoint/compromised node (source) to the crown jewels/critical asset (target).
-      
-    Args:
-        graph_data (NetworkGraph): Validated network graph data model containing nodes and edges.
-        
-    Returns:
-        List[str]: List of node IDs representing the ordered sequence of compromised nodes in the attack path.
+    Utilizes Dijkstra's shortest path algorithm on weighted edges.
     """
-    # 1. Initialize a directed graph in networkx
+    if not graph_data.nodes or not graph_data.edges:
+        return []
+        
     di_graph = nx.DiGraph()
     
-    # 2. Populate nodes with their configurations and metadata
+    # Add nodes to graph
     for node in graph_data.nodes:
-        di_graph.add_node(
-            node.id, 
-            label=node.label, 
-            type=node.type, 
-            config=node.config
-        )
+        di_graph.add_node(node.id, **node.dict())
         
-    # 3. Populate directed connections/edges
+    # Add bidirectional edges with weight calculated from the target node's config
     for edge in graph_data.edges:
-        di_graph.add_edge(
-            edge.source, 
-            edge.target, 
-            id=edge.id
-        )
-        
-    # 4. Dummy path computation for boilerplate testing.
-    # Returns the first and last node in the graph if available, or placeholder IDs.
-    if len(graph_data.nodes) >= 2:
-        dummy_path = [graph_data.nodes[0].id, graph_data.nodes[-1].id]
-    elif len(graph_data.nodes) == 1:
-        dummy_path = [graph_data.nodes[0].id]
-    else:
-        dummy_path = ["node-1", "node-2", "node-3"]
-        
-    return dummy_path
+        target_node = next((n for n in graph_data.nodes if n.id == edge.target), None)
+        if target_node:
+            weight = calculate_traversal_cost(target_node.type, target_node.config)
+            di_graph.add_edge(edge.source, edge.target, weight=weight)
+            di_graph.add_edge(edge.target, edge.source, weight=weight)
+            
+    attacker_node = graph_data.nodes[0].id
+    target_node = graph_data.nodes[-1].id
+    
+    try:
+        path = nx.shortest_path(di_graph, source=attacker_node, target=target_node, weight='weight')
+        return path
+    except (nx.NetworkXNoPath, nx.NodeNotFound):
+        return []
