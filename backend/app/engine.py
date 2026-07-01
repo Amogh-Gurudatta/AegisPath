@@ -2,10 +2,11 @@ import networkx as nx
 from typing import List
 from app.schemas import NetworkGraph
 
-def calculate_traversal_cost(source_node: dict, target_node: dict) -> int:
+def calculate_traversal_cost(source_node: dict, target_node: dict, persona: str = 'standard') -> int:
     """
     Calculates the traversal cost (edge weight) to reach a target node from a source node
-    based on stateful network routing, firewall configurations, and vulnerability scores.
+    based on stateful network routing, firewall configurations, vulnerability scores,
+    and the attacker persona.
     """
     src_config = source_node.get('config', {})
     tgt_config = target_node.get('config', {})
@@ -23,6 +24,12 @@ def calculate_traversal_cost(source_node: dict, target_node: dict) -> int:
             cost = 10
         else:
             cost = 9999
+            
+        # Persona Adjustments for Firewall
+        if persona == 'script_kiddie':
+            cost += 500
+        elif persona == 'apt':
+            cost += 50
             
     # Server/Workstation Logic
     else:
@@ -45,6 +52,14 @@ def calculate_traversal_cost(source_node: dict, target_node: dict) -> int:
             if set(src_ports) & set(tgt_ports):
                 cost -= 20
                 
+        # Persona Adjustments for Endpoints
+        if persona == 'script_kiddie':
+            if tgt_config.get('has_rce_vulnerability') is True:
+                cost -= 99
+        elif persona == 'apt':
+            if tgt_config.get('has_weak_credentials') is True:
+                cost -= 80
+                
     return max(1, int(cost))
 
 def compute_attack_path(graph_data: NetworkGraph) -> dict:
@@ -61,6 +76,7 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
         }
         
     di_graph = nx.DiGraph()
+    persona = getattr(graph_data, 'persona', 'standard') or 'standard'
     
     # Add nodes to graph
     for node in graph_data.nodes:
@@ -76,11 +92,11 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
             target_dict = target_node_model.dict()
             
             # Forward connection: source -> target
-            weight_forward = calculate_traversal_cost(source_dict, target_dict)
+            weight_forward = calculate_traversal_cost(source_dict, target_dict, persona)
             di_graph.add_edge(edge.source, edge.target, weight=weight_forward)
             
             # Backward connection: target -> source
-            weight_backward = calculate_traversal_cost(target_dict, source_dict)
+            weight_backward = calculate_traversal_cost(target_dict, source_dict, persona)
             di_graph.add_edge(edge.target, edge.source, weight=weight_backward)
             
     attacker_node = graph_data.nodes[0].id

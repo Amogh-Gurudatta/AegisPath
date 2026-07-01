@@ -25,6 +25,8 @@ class EdgeModel(BaseModel):
 class NetworkGraph(BaseModel):
     nodes: List[NodeModel] = Field(default_factory=list, description="List of threat topology nodes")
     edges: List[EdgeModel] = Field(default_factory=list, description="List of directed network connections/edges")
+    persona: str = Field("standard", description="Attacker persona type: 'standard', 'script_kiddie', or 'apt'")
+
 
 class SimulationResponse(BaseModel):
     success: bool

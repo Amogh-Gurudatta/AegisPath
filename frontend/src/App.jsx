@@ -118,6 +118,7 @@ export default function App() {
   const [contributingFactors, setContributingFactors] = useState([]);
   const [riskScore, setRiskScore] = useState(0);
   const [showReport, setShowReport] = useState(false);
+  const [persona, setPersona] = useState('standard');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
@@ -351,7 +352,8 @@ export default function App() {
           source: e.source,
           target: e.target,
           config: e.config || {}
-        }))
+        })),
+        persona: persona
       };
 
       const response = await fetch('http://127.0.0.1:8000/api/simulate', {
@@ -404,6 +406,7 @@ export default function App() {
     setContributingFactors([]);
     setRiskScore(0);
     setShowReport(false);
+    setPersona('standard');
     setSelectedNode(null);
     setError(null);
   };
@@ -419,6 +422,28 @@ export default function App() {
         </div>
         
         <div className="header-actions">
+          <select 
+            className="btn select-persona"
+            value={persona}
+            onChange={(e) => setPersona(e.target.value)}
+            style={{
+              background: 'var(--bg-tertiary)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-primary)',
+              borderRadius: '6px',
+              padding: '8px 12px',
+              cursor: 'pointer',
+              outline: 'none',
+              fontFamily: 'var(--font-sans)',
+              fontWeight: 500,
+              fontSize: '14px'
+            }}
+          >
+            <option value="standard">Standard Attacker</option>
+            <option value="script_kiddie">Script Kiddie</option>
+            <option value="apt">APT (Advanced Threat)</option>
+          </select>
+
           <button 
             className="btn" 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
