@@ -895,14 +895,6 @@ export default function App() {
             <span className="btn-label">View Tour</span>
           </button>
 
-          <button
-            className="btn"
-            onClick={() => setIsSidebarOpen((v) => !v)}
-            title="Toggle Sidebar"
-          >
-            {isSidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
-            <span className="btn-label">{isSidebarOpen ? 'Hide' : 'Show'} Library</span>
-          </button>
 
           <button className="btn" onClick={handleResetGraph} title="Reset canvas" disabled={loading}>
             <RefreshCw size={16} />
@@ -925,6 +917,7 @@ export default function App() {
       <main className="dashboard-main">
         <Sidebar
           isSidebarOpen={isSidebarOpen}
+          onToggle={() => setIsSidebarOpen((v) => !v)}
           onDragStart={onDragStart}
           activePersona={activePersona}
           error={error}

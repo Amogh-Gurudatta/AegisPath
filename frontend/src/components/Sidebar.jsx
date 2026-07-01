@@ -1,8 +1,9 @@
 import React, { useRef } from 'react';
-import { Shield, Server, Laptop, ChevronRight, AlertTriangle, TrendingUp, Download, Upload } from 'lucide-react';
+import { Shield, Server, Laptop, ChevronRight, AlertTriangle, TrendingUp, Download, Upload, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 export default function Sidebar({
   isSidebarOpen,
+  onToggle,
   onDragStart,
   activePersona,
   error,
@@ -30,9 +31,28 @@ export default function Sidebar({
   };
 
   return (
-    <aside className={`sidebar ${isSidebarOpen ? '' : 'collapsed'}`}>
+    <>
+      {/* Floating reopen tab — only visible when collapsed */}
+      {!isSidebarOpen && (
+        <button
+          className="sidebar-reopen-tab"
+          onClick={onToggle}
+          title="Show library"
+        >
+          <PanelLeftOpen size={15} />
+        </button>
+      )}
+
+      <aside className={`sidebar ${isSidebarOpen ? '' : 'collapsed'}`}>
       <div className="sidebar-header">
         <h3 className="sidebar-title">Component Library</h3>
+        <button
+          className="sidebar-collapse-btn"
+          onClick={onToggle}
+          title="Hide library"
+        >
+          <PanelLeftClose size={15} />
+        </button>
       </div>
 
       {/* Palette */}
@@ -145,5 +165,6 @@ export default function Sidebar({
         />
       </div>
     </aside>
+    </>
   );
 }
