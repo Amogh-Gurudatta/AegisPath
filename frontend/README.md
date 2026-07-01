@@ -1,68 +1,119 @@
-# AegisPath Interactive Dashboard
+# AegisPath — Frontend Dashboard
 
-The frontend for AegisPath is a modern React application powered by Vite. It provides an intuitive, drag-and-drop canvas for security engineers to build, configure, and visualize threat topologies.
+> React + Vite interactive threat topology canvas for AegisPath.
 
-## ✨ Key Features
+---
 
-*   **ReactFlow Canvas:** A highly interactive, performant node-based workspace for assembling network diagrams.
-*   **Premium Cybersecurity UX/UI:** Designed with a sleek dark mode, neon color palettes, and glassmorphism elements to deliver a professional "Hacker-chic" aesthetic.
-*   **Native HTML5 Drag & Drop:** Seamlessly drag pre-configured components (Firewalls, Servers, Workstations) from the palette onto the canvas. Coordinates are automatically projected.
-*   **Contextual Inspector:** Clicking any node reveals an Inspector pane to tune specific stateful attributes like IP addresses, CVSS vulnerability scores, and port configurations.
-*   **Real-time Visual Feedback:** When a simulation is executed via the backend API, the resulting attack path is visually highlighted on the canvas, illuminating the compromised route.
+## Overview
 
-## 📂 Project Structure
+The frontend is a single-page application (SPA) built with React 18 and Vite. It provides a professional cybersecurity command-center interface for building network topologies, running threat simulations, and analyzing risk reports — all in real time.
+
+---
+
+## Project Structure
 
 ```text
 frontend/
-├── public/           # Static assets
+├── public/
 ├── src/
-│   ├── components/   # Reusable UI components (Canvas, Sidebar, Inspector)
-│   ├── App.jsx       # Main application layout and state management
-│   ├── index.css     # Global styles and design system tokens
-│   └── main.jsx      # React entry point
-├── index.html        # HTML template
-├── package.json      # NPM dependencies and scripts
-├── README.md         # This documentation
-└── vite.config.js    # Vite bundler configuration
+│   ├── App.jsx           # Root component: state, DnD, simulation, animation orchestration
+│   ├── App.css           # Blank — all styles live in index.css
+│   ├── components/
+│   │   └── Canvas.jsx    # ReactFlow canvas wrapper (nodes, edges, minimap, controls)
+│   ├── index.css         # Full enterprise design system (CSS variables, layout, components)
+│   └── main.jsx          # React entry point
+├── index.html
+├── package.json
+├── README.md
+└── vite.config.js
 ```
 
-## 🚀 Setup & Installation
+---
 
-1.  **Navigate to the frontend directory:**
-    ```bash
-    cd frontend
-    ```
+## Setup
 
-2.  **Install NPM dependencies:**
-    ```bash
-    npm install
-    ```
+```bash
+# Install dependencies
+npm install
 
-3.  **Start the development server:**
-    ```bash
-    npm run dev
-    ```
-    The application will automatically open in your default browser at `http://localhost:5173`.
+# Start development server
+npm run dev
+# → http://localhost:5173
 
-4.  **Build for Production:**
-    To generate an optimized production build, run:
-    ```bash
-    npm run build
-    ```
-    The output will be placed in the `dist/` directory.
+# Production build
+npm run build
+# → dist/
+```
 
-## 🎨 Design System & Customization
+---
 
-The UI is driven by standard CSS located in `src/index.css`. The aesthetic heavily relies on CSS variables for consistent theming. 
+## Key Features
 
-*   **Colors:** Neon blues, synthetic pinks, and deep space grays.
-*   **Typography:** Modern sans-serif stacks optimized for legibility in complex UI layouts.
-*   **Animations:** Subtle micro-interactions on hover and drag events enhance the application's responsiveness.
+### Interactive Canvas
 
-To customize the look and feel, edit the CSS variables defined in the `:root` pseudo-class within `index.css`.
+- Built on **ReactFlow** with a dot-grid background, pan/zoom controls, and a minimap.
+- Edge connections are drawn by dragging from a node handle to another node.
+- Clicking the background deselects the active node.
 
-## 🔗 Integration with Backend
+### Drag-and-Drop Component Library
 
-The frontend communicates with the FastAPI backend via the `/api/simulate` endpoint.
-*   **State Management:** The application state (nodes, edges, configurations) is managed via React hooks (`useState`, `useCallback`) and ReactFlow's internal state.
-*   **Data Serialization:** When the simulation is triggered, the canvas state is serialized into the JSON payload expected by the backend's Pydantic schemas.
+- Three draggable palette items: **Firewall Guard**, **Enterprise Server**, **User Workstation**.
+- On drop, a new node is instantiated with a default config and positioned precisely at the cursor using `reactFlowInstance.project()`.
+
+### Attacker Persona Selector
+
+- Dropdown in the header with three options: **Standard**, **Script Kiddie**, **APT Threat Group**.
+- The selected persona is embedded in the simulation payload and passed to the backend engine, which shifts traversal costs and re-routes the Dijkstra path accordingly.
+- A compact **persona card** in the sidebar shows the active selection with icon and description.
+
+### Sequential Animation Engine
+
+- On simulation completion, nodes animate **sequentially** along the computed path:
+  1. Node pulses **amber** (analyzing phase — 400ms)
+  2. Node locks to **red** (compromised) with a glow shadow
+  3. The connecting edge turns red and animates
+  4. 700ms pause before the next hop
+- The canvas **resets styles** before each new simulation run.
+
+### Risk Assessment Report
+
+- Slides up from the bottom-right of the canvas after simulation completes.
+- Displays: numerical **risk score** (0–100), **severity label** (MODERATE / HIGH / CRITICAL) color-coded by threshold, **hop count**, active persona, and a bulleted list of **contributing risk factors** generated by the backend engine.
+
+### Node Inspector
+
+- Right panel auto-opens when any node is clicked.
+- Shows node type (with matching icon), all config key-value pairs with proper formatting (booleans shown as Yes/No, arrays joined), and a **simulation status badge** (whether the node was in the attack path).
+
+### Status Bar
+
+- Center of the header shows live simulation state:
+  - Idle: node/edge count
+  - Running: animated amber dot
+  - Complete: green dot + hop count
+  - Error/Offline: offline mode indicator
+
+---
+
+## Design System
+
+All styles are authored as vanilla CSS in `src/index.css`.
+
+| Token            | Value                                                       |
+| ---------------- | ----------------------------------------------------------- |
+| Font (UI)        | Inter                                                       |
+| Font (Code/Mono) | JetBrains Mono                                              |
+| Background       | `#080a0f` / `#0d1017` / `#141820`                           |
+| Accent Rose      | `#f43f5e`                                                   |
+| Accent Indigo    | `#6366f1`                                                   |
+| Accent Emerald   | `#10b981`                                                   |
+| Accent Amber     | `#f59e0b`                                                   |
+| Glass background | `rgba(13, 16, 23, 0.82)` with `backdrop-filter: blur(20px)` |
+
+---
+
+## Backend Integration
+
+The frontend posts to `http://127.0.0.1:8000/api/simulate`. If the backend is unreachable, it falls back to an offline mode with a dummy two-node path and displays an offline warning in the sidebar.
+
+To change the backend URL, update the `fetch()` call in `App.jsx → handleRunSimulation`.

@@ -9,16 +9,19 @@ import 'reactflow/dist/style.css';
 
 /**
  * Canvas Component
- * 
- * Interactive threat topology workspace canvas built on ReactFlow.
- * 
+ *
+ * Interactive threat topology workspace built on ReactFlow.
+ * Renders nodes, edges, minimap, background grid, and viewport controls.
+ *
  * Props:
- * - nodes: Array of ReactFlow node objects.
- * - edges: Array of ReactFlow edge objects.
- * - onNodesChange: Handler for node transformations (drag, select, etc.).
- * - onEdgesChange: Handler for edge transformations.
- * - onConnect: Handler for establishing connections between nodes.
- * - onNodeClick: Handler called when a node is clicked.
+ *   nodes          – ReactFlow node array
+ *   edges          – ReactFlow edge array
+ *   onNodesChange  – Node change handler (drag, delete, etc.)
+ *   onEdgesChange  – Edge change handler
+ *   onConnect      – New connection handler
+ *   onNodeClick    – Node click handler
+ *   onPaneClick    – Background pane click handler (deselect)
+ *   onInit         – ReactFlow instance callback
  */
 export default function Canvas({
   nodes = [],
@@ -27,10 +30,11 @@ export default function Canvas({
   onEdgesChange,
   onConnect,
   onNodeClick,
+  onPaneClick,
   onInit,
 }) {
   return (
-    <div className="canvas-container" style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -38,42 +42,48 @@ export default function Canvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
         onInit={onInit}
         fitView
+        fitViewOptions={{ padding: 0.15 }}
+        defaultEdgeOptions={{ type: 'smoothstep' }}
         attributionPosition="bottom-right"
+        proOptions={{ hideAttribution: false }}
       >
-        {/* Sleek grid backdrop suited for a command center */}
-        <Background 
-          variant={BackgroundVariant.Lines} 
-          color="#23283c" 
-          gap={24} 
-          size={1} 
+        {/* Subtle dot grid backdrop */}
+        <Background
+          variant={BackgroundVariant.Dots}
+          color="#1e2438"
+          gap={20}
+          size={1.2}
         />
-        
-        {/* Viewport zoom/pan controls */}
-        <Controls 
-          showInteractive={false} 
-          className="react-flow-controls-custom"
+
+        {/* Viewport controls */}
+        <Controls
+          showInteractive={false}
           style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--border-color)',
-            borderRadius: '6px',
-            color: 'var(--text-primary)'
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
           }}
         />
-        
-        {/* MiniMap overlay for structural context */}
-        <MiniMap 
+
+        {/* Minimap */}
+        <MiniMap
           nodeColor={(n) => {
-            if (n.type === 'firewall') return 'var(--accent-rose)';
-            if (n.type === 'server') return 'var(--accent-indigo)';
-            return 'var(--accent-blue)';
+            switch (n.nodeType) {
+              case 'firewall': return '#f43f5e';
+              case 'server': return '#818cf8';
+              case 'internet': return '#64748b';
+              default: return '#38bdf8';
+            }
           }}
-          maskColor="rgba(10, 11, 16, 0.7)"
+          maskColor="rgba(10, 11, 16, 0.75)"
           style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--border-color)',
-            borderRadius: '6px'
+            borderRadius: '8px',
           }}
         />
       </ReactFlow>

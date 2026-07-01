@@ -111,6 +111,18 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
     risk_score = 0.0
     contributing_factors = []
     
+    # Build a label lookup for human-readable factor messages
+    node_label_map = {n.id: (n.label or n.id) for n in graph_data.nodes}
+    
+    PERSONA_LABELS = {
+        'standard': 'Standard',
+        'script_kiddie': 'Script Kiddie',
+        'apt': 'APT Threat Group',
+    }
+    contributing_factors.append(
+        f"Simulated under attacker persona: {PERSONA_LABELS.get(persona, persona)}."
+    )
+    
     if path:
         for i, node_id in enumerate(path):
             node_model = next((n for n in graph_data.nodes if n.id == node_id), None)
@@ -153,6 +165,7 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
             # Inspect edge between node i-1 and node i
             if i > 0:
                 prev_node_id = path[i - 1]
+                prev_label = node_label_map.get(prev_node_id, prev_node_id)
                 edge_model = next((e for e in graph_data.edges if 
                                    (e.source == prev_node_id and e.target == node_id) or
                                    (e.source == node_id and e.target == prev_node_id)), None)
@@ -160,7 +173,7 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
                     edge_config = edge_model.config or {}
                     if edge_config.get('unencrypted') is True or edge_config.get('is_unencrypted') is True:
                         risk_score += 15.0
-                        contributing_factors.append(f"Cleartext traffic intercepted on connection between '{prev_node_id}' and '{node_id}'.")
+                        contributing_factors.append(f"Cleartext traffic intercepted on link '{prev_label}' → '{node_label}'.")
                         
         risk_score = min(100.0, max(0.0, risk_score))
         

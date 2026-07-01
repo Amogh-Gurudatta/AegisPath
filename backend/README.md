@@ -1,92 +1,163 @@
-# AegisPath Backend Engine
+# AegisPath — Backend Engine
 
-The backend for AegisPath is a high-performance, asynchronous Python REST API built with FastAPI. It serves as the computational core for simulating cyber-attack paths through modeled network topologies.
+> FastAPI REST API powering the AegisPath threat simulation engine.
 
-## 🌟 Core Capabilities
+---
 
-*   **FastAPI Framework:** Delivers fast, robust, and self-documenting API endpoints.
-*   **Strict Schema Validation:** Utilizes Pydantic to ensure all incoming topology graphs (`NodeModel`, `EdgeModel`, `NetworkGraph`) adhere to the required structure and contain valid stateful parameters.
-*   **Advanced Pathing Engine (NetworkX):** Employs a customized Dijkstra shortest-path algorithm. Instead of static weights, edge costs are evaluated dynamically during graph construction based on the specific interaction between source and target nodes.
-*   **Stateful Security Logic:**
-    *   **Firewalls:** Evaluates traffic based on `ip_address` matching against `allowed_ips` whitelists. Traffic bypasses or drops dynamically.
-    *   **Endpoints (Servers/Workstations):** Calculates traversal cost based on intrinsic vulnerabilities (e.g., `cvss_score`), configuration weaknesses, and whether the attacking node shares compatible `open_ports` with a compromised source.
+## Overview
 
-## 📂 Project Structure
+The backend is a high-performance asynchronous Python service that ingests a structured network topology, constructs a weighted directed graph, and computes the optimal lateral movement path an attacker would traverse based on stateful security rules and the selected attacker persona.
+
+---
+
+## Project Structure
 
 ```text
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── engine.py     # Core NetworkX graph logic and stateful cost calculation
-│   ├── main.py       # FastAPI application and route definitions
-│   └── schemas.py    # Pydantic data validation models
-├── .gitignore        # Comprehensive Python gitignore
-├── README.md         # This documentation
-└── requirements.txt  # Python dependencies
+│   ├── engine.py     # Core graph engine: stateful cost model, Dijkstra, risk scoring
+│   ├── main.py       # FastAPI application, CORS, and route definitions
+│   └── schemas.py    # Pydantic v2 data models for request/response validation
+├── .gitignore
+├── README.md
+└── requirements.txt
 ```
 
-## 🚀 Setup & Installation
+---
 
-1.  **Navigate to the backend directory:**
-    ```bash
-    cd backend
-    ```
+## Setup
 
-2.  **Create and activate a virtual environment:**
-    ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
-    ```
+```bash
+# 1. Create and activate a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
 
-3.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+# 2. Install dependencies
+pip install -r requirements.txt
 
-4.  **Run the Uvicorn development server:**
-    ```bash
-    uvicorn app.main:app --reload --port 8000
-    ```
+# 3. Start the development server
+uvicorn app.main:app --reload --port 8000
+```
 
-## 🔌 API Reference
+| Endpoint        | Method | Description                             |
+| --------------- | ------ | --------------------------------------- |
+| `/health`       | `GET`  | Service liveness check                  |
+| `/api/simulate` | `POST` | Run threat simulation on topology graph |
+| `/docs`         | `GET`  | Swagger interactive API documentation   |
 
-Once the server is running, you can access the interactive Swagger UI documentation at `http://127.0.0.1:8000/docs`.
+---
 
-### `GET /health`
-*   **Description:** Service health check endpoint.
-*   **Response:** `{"status": "ok"}`
+## API Reference
 
 ### `POST /api/simulate`
-*   **Description:** Accepts a network topology and computes the optimal attack path from a compromised entry point to the target.
-*   **Payload structure (`NetworkGraph`):**
-    ```json
+
+Accepts a `NetworkGraph` payload and returns a `SimulationResponse`.
+
+**Request body (`NetworkGraph`):**
+
+```json
+{
+  "nodes": [
     {
-      "nodes": [
-        {
-          "id": "node_1",
-          "label": "Firewall",
-          "type": "firewall",
-          "config": {
-            "allowed_ips": ["192.168.1.50"]
-          }
-        },
-        // ... more nodes
-      ],
-      "edges": [
-        {
-          "id": "edge_1",
-          "source": "node_1",
-          "target": "node_2"
-        },
-        // ... more edges
-      ]
+      "id": "n1",
+      "label": "External Internet",
+      "type": "workstation",
+      "config": { "ip_address": "0.0.0.0" }
+    },
+    {
+      "id": "n2",
+      "label": "Border Firewall",
+      "type": "firewall",
+      "config": { "allowed_ips": ["0.0.0.0"] }
+    },
+    {
+      "id": "n3",
+      "label": "Database Server",
+      "type": "server",
+      "config": {
+        "ip_address": "192.168.2.100",
+        "cvss_score": 8.5,
+        "has_weak_credentials": true,
+        "open_ports": [5432]
+      }
     }
-    ```
-*   **Response:** Returns a list of Node IDs representing the computed path, e.g., `["node_1", "node_4", "node_5"]`.
+  ],
+  "edges": [
+    { "id": "e1", "source": "n1", "target": "n2" },
+    {
+      "id": "e2",
+      "source": "n2",
+      "target": "n3",
+      "config": { "unencrypted": true }
+    }
+  ],
+  "persona": "apt"
+}
+```
 
-## 🧠 Simulation Engine Internals
+**Supported `persona` values:** `standard` · `script_kiddie` · `apt`
 
-The `compute_attack_path` function within `app/engine.py` is the heart of the system. 
-1. It translates the Pydantic `NetworkGraph` into a `networkx.DiGraph`.
-2. As edges are added, the `calculate_traversal_cost(source, target)` function is invoked.
-3. This function acts as a rules engine, evaluating the defensive posture of the target against the attributes of the source to determine the final edge weight.
+**Response (`SimulationResponse`):**
+
+```json
+{
+  "success": true,
+  "attack_path": ["n1", "n2", "n3"],
+  "contributing_factors": [
+    "Simulated under attacker persona: APT Threat Group.",
+    "Firewall 'Border Firewall' bypassed via whitelisted IP rule.",
+    "High CVSS vulnerability (8.5) detected on host 'Database Server'.",
+    "Weak credentials identified on node 'Database Server'.",
+    "Cleartext traffic intercepted on link 'Border Firewall' → 'Database Server'."
+  ],
+  "risk_score": 100.0,
+  "message": "Successfully simulated graph containing 3 nodes and 2 edges."
+}
+```
+
+---
+
+## Node Config Fields
+
+| Field                   | Type        | Description                                                        |
+| ----------------------- | ----------- | ------------------------------------------------------------------ |
+| `ip_address`            | `str`       | Node IP address used for firewall IP matching                      |
+| `allowed_ips`           | `list[str]` | (Firewalls) Whitelisted source IPs; `"0.0.0.0/0"` = allow all      |
+| `open_ports`            | `list[int]` | Open ports used for shared-port lateral movement discount          |
+| `cvss_score`            | `float`     | CVSS vulnerability score (0.0–10.0); higher = lower traversal cost |
+| `has_rce_vulnerability` | `bool`      | Grants a large traversal discount for Script Kiddie persona        |
+| `has_weak_credentials`  | `bool`      | Grants a large traversal discount for APT persona                  |
+| `is_patched`            | `bool`      | `false` increases traversal cost (increases risk score)            |
+| `is_compromised`        | `bool`      | If true, source node checks for shared ports with target           |
+
+**Edge config:**
+
+| Field                            | Type   | Description                                                        |
+| -------------------------------- | ------ | ------------------------------------------------------------------ |
+| `unencrypted` / `is_unencrypted` | `bool` | Flags cleartext link; adds 15 to risk score and generates a factor |
+
+---
+
+## Simulation Engine Internals
+
+1. **Graph Construction** — nodes and bidirectional edges are added to a `networkx.DiGraph`.
+2. **Weight Calculation** (`calculate_traversal_cost`) — edge weight is computed per-pair based on:
+   - Target type (firewall vs. endpoint)
+   - Firewall IP whitelist matching
+   - CVSS score and vulnerability flags on the target
+   - Port overlap with a compromised source
+   - **Attacker persona modifiers** (additive penalties/discounts)
+3. **Pathfinding** — `nx.shortest_path(weight='weight')` finds the minimum-cost route from node[0] to node[-1].
+4. **Risk Scoring** — traverses the resolved path, accumulating a risk score (0–100) and generating human-readable contributing factors per node and edge.
+
+---
+
+## Attacker Persona Cost Model
+
+| Condition                  | Standard | Script Kiddie | APT      |
+| -------------------------- | -------- | ------------- | -------- |
+| Firewall (not whitelisted) | +9999    | +10499        | +10049   |
+| Firewall (whitelisted)     | 10       | 510           | 60       |
+| RCE vulnerability          | No bonus | **–99**       | No bonus |
+| Weak credentials           | No bonus | No bonus      | **–80**  |

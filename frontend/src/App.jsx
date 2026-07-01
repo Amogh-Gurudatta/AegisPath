@@ -1,113 +1,199 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { 
-  addEdge, 
-  useNodesState, 
-  useEdgesState, 
+import {
+  addEdge,
+  useNodesState,
+  useEdgesState,
   MarkerType,
   ReactFlowProvider,
-  useReactFlow
 } from 'reactflow';
-import { 
-  Shield, 
-  Server, 
-  Laptop, 
-  Play, 
-  Sidebar as SidebarIcon, 
-  Info, 
-  X, 
-  Cpu, 
-  Network, 
-  TrendingUp, 
+import {
+  Shield,
+  Server,
+  Laptop,
+  Play,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Info,
+  X,
+  Cpu,
+  TrendingUp,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Activity,
+  Lock,
+  User,
+  Zap,
+  ChevronRight,
+  Globe,
 } from 'lucide-react';
 import Canvas from './components/Canvas';
 import './App.css';
 
-// Baseline nodes to demonstrate network threat topology immediately on load
+// --- Node style helpers ---
+const NODE_STYLES = {
+  internet: {
+    background: '#1e293b',
+    color: '#94a3b8',
+    border: '2px solid #334155',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    fontSize: '13px',
+    fontWeight: 600,
+  },
+  firewall: {
+    background: 'rgba(244, 63, 94, 0.08)',
+    color: '#f43f5e',
+    border: '1.5px solid rgba(244, 63, 94, 0.45)',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    fontSize: '13px',
+    fontWeight: 600,
+  },
+  server: {
+    background: 'rgba(99, 102, 241, 0.08)',
+    color: '#818cf8',
+    border: '1.5px solid rgba(99, 102, 241, 0.45)',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    fontSize: '13px',
+    fontWeight: 600,
+  },
+  default: {
+    background: 'rgba(2, 132, 199, 0.08)',
+    color: '#38bdf8',
+    border: '1.5px solid rgba(2, 132, 199, 0.4)',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    fontSize: '13px',
+    fontWeight: 600,
+  },
+};
+
+const getNodeStyle = (nodeType, isInternet = false) => {
+  if (isInternet) return NODE_STYLES.internet;
+  return NODE_STYLES[nodeType] || NODE_STYLES.default;
+};
+
+// --- Baseline topology ---
 const initialNodes = [
   {
     id: 'node-1',
     type: 'default',
     data: { label: 'External Internet' },
-    position: { x: 80, y: 150 },
-    style: {
-      background: '#1e293b',
-      color: '#94a3b8',
-      border: '2px solid #334155',
-      borderRadius: '8px',
-      padding: '10px',
-    },
+    position: { x: 60, y: 160 },
+    style: NODE_STYLES.internet,
+    nodeType: 'internet',
+    config: { ip_address: '0.0.0.0', description: 'External attacker entry point' },
   },
   {
     id: 'node-2',
     type: 'default',
     data: { label: 'Border Firewall' },
-    position: { x: 300, y: 150 },
-    style: {
-      background: 'rgba(244, 63, 94, 0.1)',
-      color: '#f43f5e',
-      border: '2px solid rgba(244, 63, 94, 0.5)',
-      borderRadius: '8px',
-      padding: '10px',
-    },
+    position: { x: 310, y: 160 },
+    style: NODE_STYLES.firewall,
     nodeType: 'firewall',
-    config: { ip: '10.0.0.1', rules: 'Deny All unless SSH/HTTP', version: 'v9.4' }
+    config: { ip_address: '10.0.0.1', allowed_ips: ['0.0.0.0'], version: 'v9.4' },
   },
   {
     id: 'node-3',
     type: 'default',
-    data: { label: 'Web Server DMZ' },
-    position: { x: 520, y: 80 },
-    style: {
-      background: 'rgba(99, 102, 241, 0.1)',
-      color: '#6366f1',
-      border: '2px solid rgba(99, 102, 241, 0.5)',
-      borderRadius: '8px',
-      padding: '10px',
-    },
+    data: { label: 'Web Server (DMZ)' },
+    position: { x: 540, y: 70 },
+    style: NODE_STYLES.server,
     nodeType: 'server',
-    config: { ip: '192.168.1.50', OS: 'Ubuntu 22.04 LTS', port: '80, 443' }
+    config: { ip_address: '192.168.1.50', os: 'Ubuntu 22.04 LTS', open_ports: [80, 443], cvss_score: 7.2 },
   },
   {
     id: 'node-4',
     type: 'default',
     data: { label: 'Database Server' },
-    position: { x: 740, y: 150 },
-    style: {
-      background: 'rgba(2, 132, 199, 0.1)',
-      color: '#0284c7',
-      border: '2px solid rgba(2, 132, 199, 0.5)',
-      borderRadius: '8px',
-      padding: '10px',
-    },
+    position: { x: 760, y: 160 },
+    style: NODE_STYLES.server,
     nodeType: 'server',
-    config: { ip: '192.168.2.100', OS: 'Debian 12', db: 'PostgreSQL 16' }
+    config: { ip_address: '192.168.2.100', os: 'Debian 12', open_ports: [5432], db: 'PostgreSQL 16', has_weak_credentials: true },
   },
 ];
+
+const EDGE_BASE_STYLE = { stroke: '#2d3748', strokeWidth: 1.5 };
 
 const initialEdges = [
-  { 
-    id: 'edge-1-2', 
-    source: 'node-1', 
-    target: 'node-2', 
-    animated: true,
-    style: { stroke: '#475569' }
+  {
+    id: 'edge-1-2',
+    source: 'node-1',
+    target: 'node-2',
+    style: EDGE_BASE_STYLE,
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#2d3748' },
   },
-  { 
-    id: 'edge-2-3', 
-    source: 'node-2', 
+  {
+    id: 'edge-2-3',
+    source: 'node-2',
     target: 'node-3',
-    style: { stroke: '#475569' }
+    style: EDGE_BASE_STYLE,
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#2d3748' },
   },
-  { 
-    id: 'edge-3-4', 
-    source: 'node-3', 
+  {
+    id: 'edge-3-4',
+    source: 'node-3',
     target: 'node-4',
-    style: { stroke: '#475569' }
+    style: EDGE_BASE_STYLE,
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#2d3748' },
   },
 ];
 
+// --- Persona config ---
+const PERSONAS = [
+  {
+    id: 'standard',
+    label: 'Standard Attacker',
+    icon: User,
+    color: '#94a3b8',
+    description: 'Baseline threat actor',
+  },
+  {
+    id: 'script_kiddie',
+    label: 'Script Kiddie',
+    icon: Zap,
+    color: '#f59e0b',
+    description: 'Automated tools, no FW bypass',
+  },
+  {
+    id: 'apt',
+    label: 'APT Threat Group',
+    icon: Lock,
+    color: '#f43f5e',
+    description: 'Zero-days, credential exploitation',
+  },
+];
+
+// --- Inspector icon helper ---
+const NodeTypeIcon = ({ nodeType, size = 18 }) => {
+  switch (nodeType) {
+    case 'firewall': return <Shield size={size} />;
+    case 'server': return <Server size={size} />;
+    case 'internet': return <Globe size={size} />;
+    default: return <Laptop size={size} />;
+  }
+};
+
+const NodeTypeClass = (nodeType) => {
+  switch (nodeType) {
+    case 'firewall': return 'palette-icon-firewall';
+    case 'server': return 'palette-icon-server';
+    case 'internet': return 'palette-icon-internet';
+    default: return 'palette-icon-workstation';
+  }
+};
+
+// Safely format any config value for display
+const formatConfigValue = (val) => {
+  if (val === null || val === undefined) return '—';
+  if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+  if (Array.isArray(val)) return val.join(', ') || '—';
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+};
+
+// --- Main component ---
 export default function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -120,10 +206,13 @@ export default function App() {
   const [showReport, setShowReport] = useState(false);
   const [persona, setPersona] = useState('standard');
   const [loading, setLoading] = useState(false);
+  const [simulationStatus, setSimulationStatus] = useState('idle'); // 'idle' | 'running' | 'complete' | 'error'
   const [error, setError] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const reactFlowWrapper = useRef(null);
+  const nodeCounter = useRef(10);
 
+  // --- Drag & Drop ---
   const onDragStart = (event, nodeType) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
@@ -137,61 +226,35 @@ export default function App() {
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
-
       if (!reactFlowWrapper.current || !reactFlowInstance) return;
 
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       const type = event.dataTransfer.getData('application/reactflow');
+      if (!type) return;
 
-      // check if the dropped element is valid
-      if (typeof type === 'undefined' || !type) {
-        return;
-      }
-
+      // Use project() for coordinate conversion (compatible with installed react-flow version)
       const position = reactFlowInstance.project({
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
 
-      const newNodeId = `node-${Date.now()}`;
-      
-      // Determine default styling based on node type
-      let style = {
-        background: 'rgba(2, 132, 199, 0.1)',
-        color: '#0284c7',
-        border: '2px solid rgba(2, 132, 199, 0.5)',
-        borderRadius: '8px',
-        padding: '10px',
-      };
-      if (type === 'firewall') {
-        style = {
-          background: 'rgba(244, 63, 94, 0.1)',
-          color: '#f43f5e',
-          border: '2px solid rgba(244, 63, 94, 0.5)',
-          borderRadius: '8px',
-          padding: '10px',
-        };
-      } else if (type === 'server') {
-        style = {
-          background: 'rgba(99, 102, 241, 0.1)',
-          color: '#6366f1',
-          border: '2px solid rgba(99, 102, 241, 0.5)',
-          borderRadius: '8px',
-          padding: '10px',
-        };
-      }
+      nodeCounter.current += 1;
+      const newNodeId = `node-${nodeCounter.current}`;
+      const labelMap = { firewall: 'Firewall Node', server: 'Server Node', default: 'Workstation Node' };
 
       const newNode = {
         id: newNodeId,
         type: 'default',
         position,
-        data: { label: `${type.charAt(0).toUpperCase() + type.slice(1)} Node` },
-        style,
+        data: { label: labelMap[type] || 'Network Node' },
+        style: getNodeStyle(type),
         nodeType: type,
-        config: { 
-          is_patched: true, 
+        config: {
+          ip_address: `10.0.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 254) + 1}`,
+          is_patched: false,
           has_rce_vulnerability: false,
-          ip: `192.168.1.${Math.floor(Math.random() * 254) + 1}`
+          has_weak_credentials: false,
+          cvss_score: 0,
         },
       };
 
@@ -200,200 +263,190 @@ export default function App() {
     [reactFlowInstance, setNodes]
   );
 
-  // Hook triggered when drawing edges on the canvas
+  // --- Edges ---
   const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge({ 
-      ...params, 
-      style: { stroke: '#475569' }, 
-      markerEnd: { type: MarkerType.ArrowClosed } 
-    }, eds)),
+    (params) =>
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...params,
+            style: EDGE_BASE_STYLE,
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#2d3748' },
+          },
+          eds
+        )
+      ),
     [setEdges]
   );
 
-  // Callback when a user clicks on any node inside ReactFlow canvas
+  // --- Node selection ---
   const onNodeClick = useCallback((event, node) => {
     setSelectedNode(node);
-    if (!isInspectorOpen) {
-      setIsInspectorOpen(true);
-    }
+    if (!isInspectorOpen) setIsInspectorOpen(true);
   }, [isInspectorOpen]);
 
-  const resetGraphStyles = () => {
-    setNodes((nds) => nds.map((n) => {
-      let baseStyle = {
-        background: 'rgba(2, 132, 199, 0.1)',
-        color: '#0284c7',
-        border: '2px solid rgba(2, 132, 199, 0.5)',
-        borderRadius: '8px',
-        padding: '10px',
-      };
-      if (n.id === 'node-1') {
-        baseStyle = {
-          background: '#1e293b',
-          color: '#94a3b8',
-          border: '2px solid #334155',
-          borderRadius: '8px',
-          padding: '10px',
-        };
-      } else if (n.nodeType === 'firewall') {
-        baseStyle = {
-          background: 'rgba(244, 63, 94, 0.1)',
-          color: '#f43f5e',
-          border: '2px solid rgba(244, 63, 94, 0.5)',
-          borderRadius: '8px',
-          padding: '10px',
-        };
-      } else if (n.nodeType === 'server') {
-        baseStyle = {
-          background: 'rgba(99, 102, 241, 0.1)',
-          color: '#6366f1',
-          border: '2px solid rgba(99, 102, 241, 0.5)',
-          borderRadius: '8px',
-          padding: '10px',
-        };
-      }
-      return {
-        ...n,
-        style: baseStyle,
-        className: ''
-      };
-    }));
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
+  }, []);
 
-    setEdges((eds) => eds.map((e) => ({
-      ...e,
-      animated: false,
-      style: { stroke: '#475569', strokeWidth: 1 }
-    })));
-  };
+  // --- Animation helpers ---
+  const resetGraphStyles = useCallback(() => {
+    setNodes((nds) =>
+      nds.map((n) => ({
+        ...n,
+        style: getNodeStyle(n.nodeType, n.nodeType === 'internet'),
+        className: '',
+      }))
+    );
+    setEdges((eds) =>
+      eds.map((e) => ({
+        ...e,
+        animated: false,
+        style: EDGE_BASE_STYLE,
+        markerEnd: { type: MarkerType.ArrowClosed, color: '#2d3748' },
+      }))
+    );
+  }, [setNodes, setEdges]);
 
   const runSequentialAnimation = async (path) => {
     resetGraphStyles();
-    
+
     for (let i = 0; i < path.length; i++) {
       const nodeId = path[i];
 
-      // 1. Change node's visual state to "analyzing" (yellow with pulse animation class)
-      setNodes((nds) => nds.map((n) => {
-        if (n.id === nodeId) {
-          return {
-            ...n,
-            style: {
-              ...n.style,
-              background: 'rgba(245, 158, 11, 0.25)', // Yellow amber
-              color: '#f59e0b',
-              border: '2px dashed #f59e0b',
-            },
-            className: 'analyzing-node'
-          };
-        }
-        return n;
-      }));
+      // Phase 1: Analyzing (amber pulse)
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === nodeId
+            ? {
+                ...n,
+                style: {
+                  ...n.style,
+                  background: 'rgba(245, 158, 11, 0.2)',
+                  color: '#f59e0b',
+                  border: '2px dashed #f59e0b',
+                },
+                className: 'analyzing-node',
+              }
+            : n
+        )
+      );
 
-      // Wait 400ms
       await new Promise((r) => setTimeout(r, 400));
 
-      // 2. Change node's visual state to "compromised" (red)
-      setNodes((nds) => nds.map((n) => {
-        if (n.id === nodeId) {
-          return {
-            ...n,
-            style: {
-              ...n.style,
-              background: 'rgba(244, 63, 94, 0.25)', // Rose red
-              color: '#f43f5e',
-              border: '2px solid #f43f5e',
-              boxShadow: '0 0 15px rgba(244, 63, 94, 0.6)',
-            },
-            className: ''
-          };
-        }
-        return n;
-      }));
+      // Phase 2: Compromised (rose glow)
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === nodeId
+            ? {
+                ...n,
+                style: {
+                  ...n.style,
+                  background: 'rgba(244, 63, 94, 0.2)',
+                  color: '#f43f5e',
+                  border: '2px solid #f43f5e',
+                  boxShadow: '0 0 18px rgba(244, 63, 94, 0.55), inset 0 0 8px rgba(244, 63, 94, 0.1)',
+                },
+                className: '',
+              }
+            : n
+        )
+      );
 
-      // Highlight/animate the incoming edge to this compromised node from the previous node
+      // Activate edge leading to this node
       if (i > 0) {
         const prevNodeId = path[i - 1];
-        setEdges((eds) => eds.map((e) => {
-          if (
+        setEdges((eds) =>
+          eds.map((e) =>
             (e.source === prevNodeId && e.target === nodeId) ||
             (e.source === nodeId && e.target === prevNodeId)
-          ) {
-            return {
-              ...e,
-              animated: true,
-              style: { stroke: 'var(--accent-rose)', strokeWidth: 3 }
-            };
-          }
-          return e;
-        }));
+              ? {
+                  ...e,
+                  animated: true,
+                  style: { stroke: '#f43f5e', strokeWidth: 2.5 },
+                  markerEnd: { type: MarkerType.ArrowClosed, color: '#f43f5e' },
+                }
+              : e
+          )
+        );
       }
 
-      // Delay between hops (800ms)
-      await new Promise((r) => setTimeout(r, 800));
+      await new Promise((r) => setTimeout(r, 700));
     }
   };
 
-  // Run threat path simulation against the Python backend
+  // --- Simulation ---
   const handleRunSimulation = async () => {
+    if (nodes.length < 2) {
+      setError('Add at least two nodes and connect them before simulating.');
+      return;
+    }
+
     setLoading(true);
+    setSimulationStatus('running');
     setError(null);
     setShowReport(false);
+
     try {
-      // Map ReactFlow graph nodes/edges into our strict Pydantic models structure
       const payload = {
-        nodes: nodes.map(n => ({
+        nodes: nodes.map((n) => ({
           id: n.id,
           label: n.data.label || 'Unnamed Node',
-          type: n.nodeType || 'workstation',
-          config: n.config || {}
+          type: n.nodeType === 'internet' ? 'workstation' : (n.nodeType || 'workstation'),
+          config: n.config || {},
         })),
-        edges: edges.map(e => ({
+        edges: edges.map((e) => ({
           id: e.id,
           source: e.source,
           target: e.target,
-          config: e.config || {}
+          config: e.config || {},
         })),
-        persona: persona
+        persona,
       };
 
       const response = await fetch('http://127.0.0.1:8000/api/simulate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error('Simulation server returned an error status.');
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody.detail || `Server error: ${response.status}`);
       }
 
       const result = await response.json();
       if (result.success) {
-        const compromised_path = result.attack_path || result.compromised_path || [];
+        const path = result.attack_path || [];
         const factors = result.contributing_factors || [];
-        const score = result.risk_score || 0;
+        const score = result.risk_score ?? 0;
 
-        setSimulationPath(compromised_path);
+        setSimulationPath(path);
         setContributingFactors(factors);
         setRiskScore(score);
-        
-        await runSequentialAnimation(compromised_path);
+
+        await runSequentialAnimation(path);
+        setSimulationStatus('complete');
         setShowReport(true);
       }
     } catch (err) {
-      console.warn('Backend server connection failed. Running simulation locally fallback...', err);
-      // Fallback simulating locally if backend isn't actively run
-      const dummyPath = nodes.length > 0 ? [nodes[0].id, nodes[nodes.length - 1].id] : [];
+      console.warn('[AegisPath] Backend unavailable. Running local fallback.', err);
+
+      const dummyPath =
+        nodes.length >= 2 ? nodes.map((n) => n.id) : [];
+
       setSimulationPath(dummyPath);
       setContributingFactors([
-        "Backend connection unavailable; loaded local fallback path.",
-        "Ensure uvicorn is running on port 8000 to enable dynamic stateful cost scoring.",
-        `Graph traversal contains ${dummyPath.length} hops.`
+        'Backend server unreachable — running offline fallback simulation.',
+        'Start the FastAPI server on port 8000 for live stateful analysis.',
+        `Persona: "${PERSONAS.find((p) => p.id === persona)?.label}" applied (offline mode ignores persona weights).`,
       ]);
       setRiskScore(45.0);
-      
+
       await runSequentialAnimation(dummyPath);
+      setSimulationStatus('error');
       setShowReport(true);
-      setError("Backend connection skipped/unreachable. Simulation running in mock fallback mode.");
+      setError('Offline mode: backend unavailable. Results are non-deterministic.');
     } finally {
       setLoading(false);
     }
@@ -407,220 +460,243 @@ export default function App() {
     setRiskScore(0);
     setShowReport(false);
     setPersona('standard');
+    setSimulationStatus('idle');
     setSelectedNode(null);
     setError(null);
   };
 
+  // --- Derived values ---
+  const activePersona = PERSONAS.find((p) => p.id === persona) || PERSONAS[0];
+  const severityLabel = riskScore >= 70 ? 'CRITICAL' : riskScore >= 40 ? 'HIGH' : 'MODERATE';
+  const severityColor =
+    riskScore >= 70 ? 'var(--accent-rose)' : riskScore >= 40 ? 'var(--accent-amber)' : 'var(--accent-emerald)';
+
   return (
     <div className="dashboard-container">
-      {/* Top Header Panel */}
+      {/* ── Header ── */}
       <header className="dashboard-header">
         <div className="logo-section">
-          <Shield size={24} className="logo-icon" />
+          <Shield size={22} className="logo-icon" />
           <span className="logo-text">AEGISPATH</span>
-          <span className="logo-badge">V1.0 BETA</span>
+          <span className="logo-badge">v1.0</span>
         </div>
-        
-        <div className="header-actions">
-          <select 
-            className="btn select-persona"
-            value={persona}
-            onChange={(e) => setPersona(e.target.value)}
-            style={{
-              background: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-primary)',
-              borderRadius: '6px',
-              padding: '8px 12px',
-              cursor: 'pointer',
-              outline: 'none',
-              fontFamily: 'var(--font-sans)',
-              fontWeight: 500,
-              fontSize: '14px'
-            }}
-          >
-            <option value="standard">Standard Attacker</option>
-            <option value="script_kiddie">Script Kiddie</option>
-            <option value="apt">APT (Advanced Threat)</option>
-          </select>
 
-          <button 
-            className="btn" 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        {/* Status bar indicator */}
+        <div className="header-status">
+          <span
+            className={`status-dot ${simulationStatus === 'running' ? 'status-dot--running' : simulationStatus === 'complete' ? 'status-dot--complete' : simulationStatus === 'error' ? 'status-dot--error' : 'status-dot--idle'}`}
+          />
+          <span className="status-label">
+            {simulationStatus === 'running'
+              ? 'Simulation Running…'
+              : simulationStatus === 'complete'
+              ? `Attack Path Resolved · ${simulationPath.length} Hops`
+              : simulationStatus === 'error'
+              ? 'Offline Mode'
+              : `${nodes.length} Nodes · ${edges.length} Edges`}
+          </span>
+        </div>
+
+        <div className="header-actions">
+          {/* Persona selector */}
+          <div className="persona-selector">
+            <activePersona.icon size={14} style={{ color: activePersona.color, flexShrink: 0 }} />
+            <select
+              className="persona-select"
+              value={persona}
+              onChange={(e) => setPersona(e.target.value)}
+              disabled={loading}
+            >
+              {PERSONAS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="header-divider" />
+
+          <button
+            className="btn"
+            onClick={() => setIsSidebarOpen((v) => !v)}
             title="Toggle Sidebar"
           >
-            <SidebarIcon size={16} />
-            <span>{isSidebarOpen ? 'Hide' : 'Show'} Library</span>
+            {isSidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+            <span className="btn-label">{isSidebarOpen ? 'Hide' : 'Show'} Library</span>
           </button>
-          
-          <button className="btn" onClick={handleResetGraph} title="Reset Network Canvas">
+
+          <button className="btn" onClick={handleResetGraph} title="Reset canvas" disabled={loading}>
             <RefreshCw size={16} />
-            <span>Reset</span>
+            <span className="btn-label">Reset</span>
           </button>
-          
-          <button 
-            className="btn btn-primary" 
-            onClick={handleRunSimulation} 
+
+          <button
+            className="btn btn-primary"
+            onClick={handleRunSimulation}
             disabled={loading}
-            title="Compute lateral movement path"
+            title="Run attack path simulation"
           >
-            <Play size={16} fill="#fff" />
-            <span>{loading ? 'Simulating...' : 'Run Simulation'}</span>
+            {loading ? <Activity size={16} className="spin" /> : <Play size={16} />}
+            <span>{loading ? 'Simulating…' : 'Run Simulation'}</span>
           </button>
         </div>
       </header>
 
-      {/* Main Workspace Frame */}
+      {/* ── Main workspace ── */}
       <main className="dashboard-main">
-        {/* Component Library Sidebar */}
+        {/* Sidebar */}
         <aside className={`sidebar ${isSidebarOpen ? '' : 'collapsed'}`}>
           <div className="sidebar-header">
-            <h3 className="sidebar-title">Threat Components</h3>
+            <h3 className="sidebar-title">Component Library</h3>
           </div>
-          
+
+          {/* Palette */}
           <div className="sidebar-section">
-            <h4 className="section-title">Network Nodes</h4>
+            <h4 className="section-label">Drag to Canvas</h4>
             <div className="node-palette-list">
-              <div 
-                className="palette-item"
-                draggable
-                onDragStart={(event) => onDragStart(event, 'firewall')}
-              >
-                <div className="palette-icon-wrapper palette-icon-firewall">
-                  <Shield size={18} />
+              {[
+                { type: 'firewall', label: 'Firewall Guard', sub: 'Filters & controls traffic', cls: 'palette-icon-firewall', Icon: Shield },
+                { type: 'server', label: 'Enterprise Server', sub: 'Hosts services & databases', cls: 'palette-icon-server', Icon: Server },
+                { type: 'default', label: 'User Workstation', sub: 'Endpoint & lateral pivot', cls: 'palette-icon-workstation', Icon: Laptop },
+              ].map(({ type, label, sub, cls, Icon }) => (
+                <div
+                  key={type}
+                  className="palette-item"
+                  draggable
+                  onDragStart={(e) => onDragStart(e, type)}
+                >
+                  <div className={`palette-icon-wrapper ${cls}`}>
+                    <Icon size={16} />
+                  </div>
+                  <div className="palette-details">
+                    <h4>{label}</h4>
+                    <p>{sub}</p>
+                  </div>
+                  <ChevronRight size={14} className="palette-chevron" />
                 </div>
-                <div className="palette-details">
-                  <h4>Firewall Guard</h4>
-                  <p>Monitors & filters inbound traffic</p>
-                </div>
-              </div>
+              ))}
+            </div>
+          </div>
 
-              <div 
-                className="palette-item"
-                draggable
-                onDragStart={(event) => onDragStart(event, 'server')}
-              >
-                <div className="palette-icon-wrapper palette-icon-server">
-                  <Server size={18} />
-                </div>
-                <div className="palette-details">
-                  <h4>Enterprise Server</h4>
-                  <p>Hosts services & system databases</p>
-                </div>
+          {/* Active persona info */}
+          <div className="sidebar-section">
+            <h4 className="section-label">Active Persona</h4>
+            <div className="persona-card" style={{ borderColor: activePersona.color + '44' }}>
+              <div className="persona-card-icon" style={{ color: activePersona.color, background: activePersona.color + '18' }}>
+                <activePersona.icon size={16} />
               </div>
-
-              <div 
-                className="palette-item"
-                draggable
-                onDragStart={(event) => onDragStart(event, 'default')}
-              >
-                <div className="palette-icon-wrapper palette-icon-workstation">
-                  <Laptop size={18} />
-                </div>
-                <div className="palette-details">
-                  <h4>User Workstation</h4>
-                  <p>Endpoint clients & entry points</p>
-                </div>
+              <div>
+                <p className="persona-card-name" style={{ color: activePersona.color }}>{activePersona.label}</p>
+                <p className="persona-card-desc">{activePersona.description}</p>
               </div>
             </div>
           </div>
 
-          <div className="sidebar-section">
-            <h4 className="section-title">Active Simulations</h4>
-            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+          {/* Simulation trace */}
+          <div className="sidebar-section sidebar-section--grow">
+            <h4 className="section-label">Attack Trace</h4>
+            <div className="trace-panel">
               {error && (
-                <div style={{ display: 'flex', gap: '8px', color: 'var(--accent-amber)', fontSize: '12px', marginBottom: '10px' }}>
-                  <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+                <div className="trace-warning">
+                  <AlertTriangle size={13} />
                   <span>{error}</span>
                 </div>
               )}
+
               {simulationPath.length > 0 ? (
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--accent-rose)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                    <TrendingUp size={14} />
-                    <span>Lateral Movement Found!</span>
+                  <div className="trace-found">
+                    <TrendingUp size={13} />
+                    <span>Lateral movement resolved</span>
                   </div>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                    Lateral movement sequence calculated:
-                  </p>
                   <div className="path-container">
                     {simulationPath.map((nodeId, idx) => {
-                      const matchingNode = nodes.find(n => n.id === nodeId);
+                      const n = nodes.find((nd) => nd.id === nodeId);
                       return (
                         <div key={nodeId} className="path-step">
                           <span className="path-step-badge">{idx + 1}</span>
-                          <span>{matchingNode ? matchingNode.data.label : nodeId}</span>
+                          <span className="path-step-label">{n ? n.data.label : nodeId}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
               ) : (
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  No simulation run recently. Trigger simulation using the top command bar.
-                </p>
+                <p className="trace-empty">No simulation yet. Press <strong>Run Simulation</strong> to begin.</p>
               )}
             </div>
           </div>
         </aside>
 
-        {/* Central Intersecting Workspace Canvas */}
-        <section 
+        {/* Canvas */}
+        <section
           className="canvas-container"
           ref={reactFlowWrapper}
           onDragOver={onDragOver}
           onDrop={onDrop}
         >
           <ReactFlowProvider>
-            <Canvas 
+            <Canvas
               nodes={nodes}
               edges={edges}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               onNodeClick={onNodeClick}
+              onPaneClick={onPaneClick}
               onInit={setReactFlowInstance}
             />
           </ReactFlowProvider>
 
-          {/* Simulation Report Overlay Panel */}
+          {/* Risk Report overlay */}
           {showReport && (
             <div className="simulation-report-panel">
               <div className="report-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <AlertTriangle className="report-icon" size={18} />
+                <div className="report-header-left">
+                  <AlertTriangle className="report-icon" size={16} />
                   <h3>Risk Assessment Report</h3>
                 </div>
-                <button className="close-report-btn" onClick={() => setShowReport(false)}>
-                  <X size={16} />
+                <button className="close-report-btn" onClick={() => setShowReport(false)} title="Dismiss">
+                  <X size={15} />
                 </button>
               </div>
+
               <div className="report-body">
+                {/* Score */}
                 <div className="score-section">
-                  <div className="score-gauge" style={{ borderColor: riskScore >= 70 ? 'var(--accent-rose)' : riskScore >= 40 ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>
-                    <span className="score-value">{riskScore.toFixed(0)}</span>
-                    <span className="score-label">Risk Score</span>
+                  <div
+                    className="score-gauge"
+                    style={{ borderColor: severityColor, boxShadow: `0 0 14px ${severityColor}44` }}
+                  >
+                    <span className="score-value" style={{ color: severityColor }}>
+                      {riskScore.toFixed(0)}
+                    </span>
+                    <span className="score-label">/ 100</span>
                   </div>
                   <div className="score-meta">
-                    <h4 style={{ color: riskScore >= 70 ? 'var(--accent-rose)' : riskScore >= 40 ? 'var(--accent-amber)' : 'var(--accent-emerald)' }}>
-                      Severity: {riskScore >= 70 ? 'CRITICAL' : riskScore >= 40 ? 'HIGH' : 'MODERATE'}
+                    <h4 className="score-severity" style={{ color: severityColor }}>
+                      {severityLabel}
                     </h4>
-                    <p>Total traversed hops: {simulationPath.length}</p>
+                    <p className="score-detail">Persona: <strong>{activePersona.label}</strong></p>
+                    <p className="score-detail">Path length: <strong>{simulationPath.length} hops</strong></p>
                   </div>
                 </div>
+
+                {/* Factors */}
                 <div className="factors-section">
-                  <h4>Contributing Risk Factors</h4>
+                  <h4 className="factors-title">Contributing Risk Factors</h4>
                   {contributingFactors.length > 0 ? (
                     <ul className="factors-list">
                       {contributingFactors.map((factor, idx) => (
                         <li key={idx} className="factor-item">
-                          <span className="bullet" style={{ color: riskScore >= 70 ? 'var(--accent-rose)' : 'var(--accent-amber)' }}>•</span>
+                          <span className="bullet" style={{ color: severityColor }}>▸</span>
                           <span className="factor-text">{factor}</span>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No high-risk factors identified on this path.</p>
+                    <p className="factors-empty">No critical risk factors found on this path.</p>
                   )}
                 </div>
               </div>
@@ -628,69 +704,80 @@ export default function App() {
           )}
         </section>
 
-        {/* Selected Component Inspector Panel */}
+        {/* Inspector panel */}
         <aside className={`inspector ${isInspectorOpen ? '' : 'collapsed'}`}>
           <div className="inspector-header">
-            <h3 className="inspector-title">Inspector Pane</h3>
-            <button 
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+            <h3 className="inspector-title">Node Inspector</h3>
+            <button
+              className="inspector-close-btn"
               onClick={() => setIsInspectorOpen(false)}
-              title="Close panel"
+              title="Close inspector"
             >
-              <X size={16} />
+              <X size={15} />
             </button>
           </div>
-          
+
           <div className="inspector-body">
             {selectedNode ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div className="palette-icon-wrapper palette-icon-server">
-                    <Cpu size={18} />
+              <div className="inspector-node-detail">
+                {/* Identity block */}
+                <div className="inspector-identity">
+                  <div className={`palette-icon-wrapper ${NodeTypeClass(selectedNode.nodeType)}`} style={{ width: 40, height: 40 }}>
+                    <NodeTypeIcon nodeType={selectedNode.nodeType} size={18} />
                   </div>
                   <div>
-                    <h3 style={{ fontSize: '16px', fontWeight: '600' }}>{selectedNode.data.label}</h3>
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      Type: {selectedNode.nodeType || 'generic'}
-                    </p>
+                    <h3 className="inspector-node-name">{selectedNode.data.label}</h3>
+                    <span className="inspector-node-type-badge">{selectedNode.nodeType || 'generic'}</span>
                   </div>
                 </div>
 
-                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-                  <h4 style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Node Metadata</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>ID:</span>
-                      <span style={{ fontFamily: 'var(--font-mono)' }}>{selectedNode.id}</span>
+                {/* Metadata table */}
+                <div className="inspector-section">
+                  <h4 className="inspector-section-title">Configuration</h4>
+                  <div className="metadata-table">
+                    <div className="metadata-row">
+                      <span className="metadata-key">Node ID</span>
+                      <span className="metadata-val metadata-val--mono">{selectedNode.id}</span>
                     </div>
-                    {selectedNode.config && Object.entries(selectedNode.config).map(([key, val]) => (
-                      <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>{key}:</span>
-                        <span>{val}</span>
-                      </div>
-                    ))}
+                    {selectedNode.config &&
+                      Object.entries(selectedNode.config).map(([key, val]) => (
+                        <div key={key} className="metadata-row">
+                          <span className="metadata-key">{key}</span>
+                          <span className={`metadata-val ${typeof val === 'boolean' ? (val ? 'metadata-val--danger' : 'metadata-val--safe') : ''}`}>
+                            {formatConfigValue(val)}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
 
-                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-                  <h4 style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Tactical Options</h4>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                    <button className="btn" style={{ flex: 1, padding: '6px 12px', fontSize: '12px' }}>
-                      Mark Entrypoint
-                    </button>
-                    <button className="btn" style={{ flex: 1, padding: '6px 12px', fontSize: '12px' }}>
-                      Isolate Node
-                    </button>
+                {/* Simulation status for this node */}
+                {simulationPath.length > 0 && (
+                  <div className="inspector-section">
+                    <h4 className="inspector-section-title">Simulation Status</h4>
+                    <div
+                      className={`node-status-badge ${simulationPath.includes(selectedNode.id) ? 'node-status-badge--compromised' : 'node-status-badge--safe'}`}
+                    >
+                      {simulationPath.includes(selectedNode.id) ? (
+                        <>
+                          <AlertTriangle size={13} />
+                          <span>Compromised in attack path (hop {simulationPath.indexOf(selectedNode.id) + 1})</span>
+                        </>
+                      ) : (
+                        <>
+                          <Shield size={13} />
+                          <span>Not in attack path</span>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             ) : (
               <div className="empty-state">
-                <Info size={40} className="empty-icon" />
-                <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>No node selected</p>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  Click on any network object inside the threat canvas to audit its attributes here.
-                </p>
+                <Cpu size={36} className="empty-icon" />
+                <p className="empty-title">No node selected</p>
+                <p className="empty-sub">Click any node on the canvas to inspect its configuration here.</p>
               </div>
             )}
           </div>

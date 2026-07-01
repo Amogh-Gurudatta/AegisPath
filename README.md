@@ -1,75 +1,116 @@
-# AegisPath - Visual Threat Topology Simulator
+# AegisPath
 
-[![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
+> **Enterprise-grade interactive threat topology simulator** for modeling, simulating, and scoring attack paths through network architectures.
 
-AegisPath is a cutting-edge web-based interactive visual threat topology simulator. Designed for security engineers and network architects, it provides a dynamic environment to model complex network architectures and simulate optimal attack paths using stateful routing rules and vulnerability scoring mechanisms.
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20NetworkX-blue.svg)]()
+[![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-purple.svg)]()
+[![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)]()
 
-## 🚀 Key Features
+---
 
-*   **Interactive Topology Modeling:** Drag-and-drop HTML5 interface to design network topologies with various node types (Firewalls, Servers, Workstations).
-*   **Stateful Threat Simulation:** Calculates attack paths considering dynamic factors like IP whitelisting, open ports, and CVSS vulnerability scores.
-*   **Dynamic Cost Evaluation:** Edge weights are computed in real-time based on the defensive posture of the target node and the capabilities of the source node.
-*   **Cybersecurity Aesthetics:** A sleek, premium dark-mode interface with neon accents inspired by modern cyberpunk and cybersecurity tools.
-*   **Modular Architecture:** Cleanly separated React/Vite frontend and FastAPI backend for easy scaling and maintenance.
+## What is AegisPath?
 
-## 🏗️ Architecture Overview
+AegisPath is a full-stack cybersecurity simulation platform. Security engineers drag-and-drop network nodes (firewalls, servers, workstations) onto an interactive canvas, wire them together, and then run a simulation that:
 
-The project is built using a modern, decoupled architecture:
+1.  Constructs a directed graph from the topology using **NetworkX**
+2.  Calculates **dynamic, stateful edge weights** based on real-world factors — CVSS scores, IP whitelists, open ports, and vulnerability flags
+3.  Applies an **attacker persona** (Script Kiddie, APT) that shifts the algorithm's priorities and re-routes the path
+4.  Runs **Dijkstra's shortest path** to find the optimal lateral movement route
+5.  Visualizes the attack hop-by-hop on the canvas with a **sequential animation**
+6.  Delivers a **Risk Assessment Report** with a numerical score and human-readable contributing factors
 
-*   **[Backend Core](./backend/README.md):** 
-    *   **Framework:** FastAPI (Python 3) for high-performance, asynchronous API endpoints.
-    *   **Data Validation:** Pydantic models strictly enforce the network graph payload structure.
-    *   **Engine:** NetworkX powers the graph traversal, utilizing a customized Dijkstra's algorithm tailored for cybersecurity risk assessment.
-*   **[Frontend Application](./frontend/README.md):** 
-    *   **Framework:** React + Vite for rapid development and optimized builds.
-    *   **Visualization:** ReactFlow library handles the complex rendering and interaction logic of the node-based canvas.
-    *   **Styling:** Custom CSS with a focus on glassmorphism, micro-animations, and responsive design.
+---
 
-## 🛠️ Getting Started
+## Architecture
 
-To run the full AegisPath stack locally, you will need to start both the backend and frontend servers.
+```
+AegisPath/
+├── backend/          # FastAPI REST API + NetworkX simulation engine
+│   ├── app/
+│   │   ├── engine.py   # Dijkstra + stateful cost calculation + risk scoring
+│   │   ├── main.py     # API routes (POST /api/simulate, GET /health)
+│   │   └── schemas.py  # Pydantic models: NodeModel, EdgeModel, NetworkGraph, SimulationResponse
+│   └── requirements.txt
+│
+├── frontend/         # React + Vite interactive dashboard
+│   ├── src/
+│   │   ├── App.jsx          # Main application: state, DnD, animation, API calls
+│   │   ├── components/
+│   │   │   └── Canvas.jsx   # ReactFlow wrapper (nodes, edges, minimap, controls)
+│   │   └── index.css        # Enterprise design system (CSS variables, glass UI)
+│   └── package.json
+│
+└── README.md         # ← you are here
+```
 
-### Prerequisites
-*   Python 3.10+
-*   Node.js 18+
-*   npm or yarn
+---
 
-### 1. Initialize the Backend
-Navigate to the `backend` directory, set up your Python virtual environment, and launch the API server.
+## Quick Start
+
+You need **Python 3.10+** and **Node.js 18+**.
+
+### 1. Backend
+
 ```bash
 cd backend
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
-*The backend API will be available at `http://127.0.0.1:8000`.*
-*For complete backend documentation, see the [Backend README](./backend/README.md).*
 
-### 2. Initialize the Frontend
-In a new terminal window, navigate to the `frontend` directory, install the required packages, and start the development server.
+API available at `http://127.0.0.1:8000`  
+Swagger UI at `http://127.0.0.1:8000/docs`
+
+### 2. Frontend
+
 ```bash
+# In a new terminal
 cd frontend
 npm install
 npm run dev
 ```
-*The frontend dashboard will be available at `http://localhost:5173`.*
-*For complete frontend documentation, see the [Frontend README](./frontend/README.md).*
 
-## 🎯 Threat Simulation Workflow
+Dashboard available at `http://localhost:5173`
 
-1.  **Launch the Dashboard:** Open your browser and navigate to `http://localhost:5173`.
-2.  **Design the Topology:** Drag components (Workstations, Firewalls, Servers) from the left sidebar onto the central canvas.
-3.  **Configure Nodes:** Click on any node to open the Inspector Pane and adjust its stateful parameters (e.g., CVSS scores, allowed IPs, open ports).
-4.  **Establish Connections:** Drag from the output handle of one node to the input handle of another to define network links.
-5.  **Simulate Attack:** Click the **Run Simulation** button. The frontend dispatches the topology graph to the backend engine.
-6.  **Analyze Results:** The backend evaluates traversal costs and returns the optimal attack path, which is immediately highlighted on the interactive canvas.
+---
 
-## 🤝 Contributing
+## Simulation Workflow
 
-Contributions are welcome! Please feel free to submit a Pull Request or open an Issue for bug reports and feature requests.
+| Step | Action                                                                                |
+| ---- | ------------------------------------------------------------------------------------- |
+| 1    | **Design** — drag Firewalls, Servers, Workstations from the sidebar onto the canvas   |
+| 2    | **Connect** — draw edges between nodes to define network links                        |
+| 3    | **Select Persona** — choose Standard, Script Kiddie, or APT from the header dropdown  |
+| 4    | **Simulate** — click **Run Simulation**; the backend computes the Dijkstra path       |
+| 5    | **Watch** — nodes animate hop-by-hop: amber (analyzing) → red (compromised)           |
+| 6    | **Analyze** — the Risk Report overlay shows score, severity, and contributing factors |
 
-## 📄 License
+---
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## Attacker Personas
+
+| Persona           | Strategy                                                                  |
+| ----------------- | ------------------------------------------------------------------------- |
+| **Standard**      | Baseline cost model                                                       |
+| **Script Kiddie** | Avoids firewalls (+500 penalty), heavily exploits RCE (-99 discount)      |
+| **APT**           | Treats firewalls as minor obstacles (+50), crushes weak credentials (-80) |
+
+Persona selection causes Dijkstra to route through _physically different paths_ on the canvas.
+
+---
+
+## Detailed Documentation
+
+- [Backend README](./backend/README.md)
+- [Frontend README](./frontend/README.md)
+
+---
+
+## Contributing
+
+Pull requests are welcome. Open an issue first for major changes.
+
+## License
+
+MIT © AegisPath Contributors
