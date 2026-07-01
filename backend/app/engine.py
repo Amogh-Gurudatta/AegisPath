@@ -132,6 +132,13 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
         f"Simulated under attacker persona: {PERSONA_LABELS.get(persona, persona)}."
     )
     
+    REMEDIATION_MAP = {
+        "has_rce_vulnerability": "Apply latest vendor security patches for node {node_label} immediately to mitigate RCE.",
+        "has_weak_credentials": "Enforce MFA and minimum password complexity policies on {node_label}.",
+        "is_patched_false": "Apply latest vendor security patches for node {node_label} immediately to mitigate RCE.",
+        "firewall": "Review and restrict ACL rules on {node_label}; implement Zero Trust least-privilege access."
+    }
+    
     recommended_actions = []
     
     if path:
@@ -150,7 +157,7 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
                     contributing_factors.append(f"Firewall {node_label} allowed malicious pivot traffic (wildcard IP enabled).")
                 else:
                     contributing_factors.append(f"Firewall {node_label} allowed malicious pivot traffic.")
-                recommended_actions.append(f"Review and restrict ACL rules on {node_label}; implement Zero Trust least-privilege access.")
+                recommended_actions.append(REMEDIATION_MAP["firewall"].format(node_label=node_label))
             else:
                 risk_score += 20.0
                 cvss = config.get('cvss_score')
@@ -165,17 +172,17 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
                 if config.get('has_rce_vulnerability') is True:
                     risk_score += 30.0
                     contributing_factors.append(f"Critical RCE exploited on {node_label}")
-                    recommended_actions.append(f"Apply latest vendor security patches for node {node_label} immediately to mitigate RCE.")
+                    recommended_actions.append(REMEDIATION_MAP["has_rce_vulnerability"].format(node_label=node_label))
                     
                 if config.get('has_weak_credentials') is True:
                     risk_score += 15.0
                     contributing_factors.append(f"Brute-forced weak credentials on {node_label}")
-                    recommended_actions.append(f"Enforce MFA and minimum password complexity policies on {node_label}.")
+                    recommended_actions.append(REMEDIATION_MAP["has_weak_credentials"].format(node_label=node_label))
                     
                 if config.get('is_patched') is False:
                     risk_score += 10.0
                     contributing_factors.append(f"Missing security patches on host '{node_label}'.")
-                    recommended_actions.append(f"Apply latest vendor security patches for node {node_label} immediately to mitigate RCE.")
+                    recommended_actions.append(REMEDIATION_MAP["is_patched_false"].format(node_label=node_label))
 
             # Inspect edge between node i-1 and node i
             if i > 0:
