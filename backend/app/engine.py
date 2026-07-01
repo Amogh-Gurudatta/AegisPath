@@ -107,9 +107,14 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
     target_node = target_node_model.id if target_node_model else graph_data.nodes[-1].id
     
     try:
-        path = nx.shortest_path(di_graph, source=attacker_node, target=target_node, weight='weight')
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        path = []
+        # Use shortest_simple_paths to find multiple alternative paths
+        path_generator = nx.shortest_simple_paths(di_graph, source=attacker_node, target=target_node, weight='weight')
+        import itertools
+        paths = list(itertools.islice(path_generator, 3))
+    except (nx.NetworkXNoPath, nx.NodeNotFound, nx.NetworkXError):
+        paths = []
+        
+    path = paths[0] if paths else []
         
     # Compute contributing factors and risk score
     risk_score = 0.0
@@ -194,6 +199,7 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
         
     return {
         "path": path,
+        "paths": paths,
         "contributing_factors": contributing_factors,
         "recommended_actions": deduped_actions,
         "risk_score": risk_score
