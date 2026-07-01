@@ -30,8 +30,7 @@ class NetworkGraph(BaseModel):
 
 class SimulationResponse(BaseModel):
     success: bool
-    attack_path: List[str]
-    attack_paths: List[List[str]] = []
+    attack_paths: List[List[str]]
     contributing_factors: List[str]
     recommended_actions: List[str] = []
     risk_score: float

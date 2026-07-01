@@ -204,7 +204,7 @@ export default function App() {
   const [selectedNode, setSelectedNode] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
-  const [simulationPath, setSimulationPath] = useState([]);
+  const [simulationPaths, setSimulationPaths] = useState([]);
   const [contributingFactors, setContributingFactors] = useState([]);
   const [simulationReport, setSimulationReport] = useState([]);
   const [remediationPlan, setRemediationPlan] = useState([]);
@@ -380,11 +380,59 @@ export default function App() {
     );
   }, [setNodes, setEdges]);
 
-  const runSequentialAnimation = async (path) => {
+  const runSequentialAnimation = async (paths) => {
     resetGraphStyles();
+    if (!paths || paths.length === 0) return;
 
-    for (let i = 0; i < path.length; i++) {
-      const nodeId = path[i];
+    const primaryPath = paths[0];
+    const altPaths = paths.slice(1);
+
+    // Trace alternative paths with a dashed yellow/orange style
+    setEdges((eds) =>
+      eds.map((edge) => {
+        let isAltEdge = false;
+        for (const path of altPaths) {
+          for (let idx = 0; idx < path.length - 1; idx++) {
+            const u = path[idx];
+            const v = path[idx + 1];
+            if (
+              (edge.source === u && edge.target === v) ||
+              (edge.source === v && edge.target === u)
+            ) {
+              let inPrimary = false;
+              for (let pIdx = 0; pIdx < primaryPath.length - 1; pIdx++) {
+                if (
+                  (primaryPath[pIdx] === u && primaryPath[pIdx + 1] === v) ||
+                  (primaryPath[pIdx] === v && primaryPath[pIdx + 1] === u)
+                ) {
+                   inPrimary = true;
+                   break;
+                }
+              }
+              if (!inPrimary) {
+                isAltEdge = true;
+                break;
+              }
+            }
+          }
+          if (isAltEdge) break;
+        }
+
+        if (isAltEdge) {
+          return {
+            ...edge,
+            animated: true,
+            style: { stroke: 'var(--accent-amber)', strokeWidth: 2, strokeDasharray: '5,5' },
+            markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--accent-amber)' },
+          };
+        }
+        return edge;
+      })
+    );
+
+    // Animate primary path
+    for (let i = 0; i < primaryPath.length; i++) {
+      const nodeId = primaryPath[i];
 
       // Phase 1: Analyzing (amber pulse)
       setNodes((nds) =>
@@ -427,7 +475,7 @@ export default function App() {
 
       // Activate edge leading to this node
       if (i > 0) {
-        const prevNodeId = path[i - 1];
+        const prevNodeId = primaryPath[i - 1];
         setEdges((eds) =>
           eds.map((e) =>
             (e.source === prevNodeId && e.target === nodeId) ||
@@ -489,18 +537,18 @@ export default function App() {
 
       const result = await response.json();
       if (result.success) {
-        const path = result.attack_path || [];
+        const paths = result.attack_paths || [];
         const factors = result.contributing_factors || [];
         const remediations = result.recommended_actions || [];
         const score = result.risk_score ?? 0;
 
-        setSimulationPath(path);
+        setSimulationPaths(paths);
         setContributingFactors(factors);
         setSimulationReport(factors);
         setRemediationPlan(remediations);
         setRiskScore(score);
 
-        await runSequentialAnimation(path);
+        await runSequentialAnimation(paths);
         setSimulationStatus('complete');
         setShowReport(true);
       }
@@ -521,13 +569,15 @@ export default function App() {
         "Ensure uvicorn is running on port 8000 to fetch real-time mitigations."
       ];
 
-      setSimulationPath(dummyPath);
+      const paths = [dummyPath];
+
+      setSimulationPaths(paths);
       setContributingFactors(fallbackFactors);
       setSimulationReport(fallbackFactors);
       setRemediationPlan(fallbackRemediations);
       setRiskScore(45.0);
 
-      await runSequentialAnimation(dummyPath);
+      await runSequentialAnimation(paths);
       setSimulationStatus('error');
       setShowReport(true);
       setError('Offline mode: backend unavailable. Results are non-deterministic.');
@@ -539,7 +589,7 @@ export default function App() {
   const handleResetGraph = () => {
     setNodes(initialNodes);
     setEdges(initialEdges);
-    setSimulationPath([]);
+    setSimulationPaths([]);
     setContributingFactors([]);
     setSimulationReport([]);
     setRemediationPlan([]);
@@ -685,6 +735,7 @@ export default function App() {
   };
 
   // --- Derived values ---
+  const primaryPath = simulationPaths[0] || [];
   const activePersona = PERSONAS.find((p) => p.id === persona) || PERSONAS[0];
   const severityLabel = riskScore >= 70 ? 'CRITICAL' : riskScore >= 40 ? 'HIGH' : 'MODERATE';
   const severityColor =
@@ -709,7 +760,7 @@ export default function App() {
             {simulationStatus === 'running'
               ? 'Simulation Running…'
               : simulationStatus === 'complete'
-              ? `Attack Path Resolved · ${simulationPath.length} Hops`
+              ? `Attack Path Resolved · ${primaryPath.length} Hops`
               : simulationStatus === 'error'
               ? 'Offline Mode'
               : `${nodes.length} Nodes · ${edges.length} Edges`}
@@ -769,7 +820,7 @@ export default function App() {
           onDragStart={onDragStart}
           activePersona={activePersona}
           error={error}
-          simulationPath={simulationPath}
+          simulationPath={primaryPath}
           nodes={nodes}
           exportGraph={exportGraph}
           importGraph={importGraph}
@@ -826,7 +877,7 @@ export default function App() {
                       {severityLabel}
                     </h4>
                     <p className="score-detail">Persona: <strong>{activePersona.label}</strong></p>
-                    <p className="score-detail">Path length: <strong>{simulationPath.length} hops</strong></p>
+                    <p className="score-detail">Path length: <strong>{primaryPath.length} hops</strong></p>
                   </div>
                 </div>
 
@@ -892,7 +943,7 @@ export default function App() {
           selectedNode={selectedNode}
           isInspectorOpen={isInspectorOpen}
           setIsInspectorOpen={setIsInspectorOpen}
-          simulationPath={simulationPath}
+          simulationPath={primaryPath}
           updateNodeConfig={updateNodeConfig}
         />
       </main>

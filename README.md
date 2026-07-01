@@ -2,7 +2,6 @@
 
 > **Enterprise-grade interactive threat topology simulator** for modeling, simulating, and scoring attack paths through network architectures.
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20NetworkX-blue.svg)]()
 [![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-purple.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)]()

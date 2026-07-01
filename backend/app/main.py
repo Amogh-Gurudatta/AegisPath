@@ -32,7 +32,6 @@ def simulate_topology(graph_data: NetworkGraph):
     result = compute_attack_path(graph_data)
     return {
         "success": True,
-        "attack_path": result["path"],
         "attack_paths": result["paths"],
         "contributing_factors": result["contributing_factors"],
         "recommended_actions": result.get("recommended_actions", []),
