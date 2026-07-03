@@ -46,6 +46,16 @@ uvicorn app.main:app --reload --port 8000
 | `/api/simulate` | `POST` | Run threat simulation on topology graph |
 | `/docs`         | `GET`  | Swagger interactive API documentation   |
 
+### Environment Configuration
+
+The backend looks for a `.env` file in its root directory or parent directory containing:
+
+```env
+PORT=8000
+HOST=127.0.0.1
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
 ---
 
 ## API Reference

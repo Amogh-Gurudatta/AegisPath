@@ -9,15 +9,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for frontend application (running on localhost:5173)
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+from app.config import CORS_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

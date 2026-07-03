@@ -92,6 +92,21 @@ npm run dev
 
 Dashboard available at `http://localhost:5173`
 
+### 3. Environment Configuration
+
+Both backend and frontend support configuration via `.env` files:
+
+*   **Backend (`backend/.env`):**
+    ```env
+    PORT=8000
+    HOST=127.0.0.1
+    CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+    ```
+*   **Frontend (`frontend/.env`):**
+    ```env
+    VITE_API_URL=http://127.0.0.1:8000
+    ```
+
 ---
 
 ## How to Use
