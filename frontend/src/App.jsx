@@ -26,6 +26,8 @@ import {
   ChevronRight,
   Globe,
   HelpCircle,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import Canvas from './components/Canvas';
 import Inspector from './components/Inspector';
@@ -38,36 +40,36 @@ import './App.css';
 // --- Node style helpers ---
 const NODE_STYLES = {
   internet: {
-    background: '#1e293b',
-    color: '#94a3b8',
-    border: '2px solid #334155',
+    background: 'var(--node-internet-bg)',
+    color: 'var(--node-internet-color)',
+    border: '2px solid var(--node-internet-border)',
     borderRadius: '10px',
     padding: '10px 14px',
     fontSize: '13px',
     fontWeight: 600,
   },
   firewall: {
-    background: 'rgba(244, 63, 94, 0.08)',
-    color: '#f43f5e',
-    border: '1.5px solid rgba(244, 63, 94, 0.45)',
+    background: 'var(--node-firewall-bg)',
+    color: 'var(--node-firewall-color)',
+    border: '1.5px solid var(--node-firewall-border)',
     borderRadius: '10px',
     padding: '10px 14px',
     fontSize: '13px',
     fontWeight: 600,
   },
   server: {
-    background: 'rgba(99, 102, 241, 0.08)',
-    color: '#818cf8',
-    border: '1.5px solid rgba(99, 102, 241, 0.45)',
+    background: 'var(--node-server-bg)',
+    color: 'var(--node-server-color)',
+    border: '1.5px solid var(--node-server-border)',
     borderRadius: '10px',
     padding: '10px 14px',
     fontSize: '13px',
     fontWeight: 600,
   },
   default: {
-    background: 'rgba(2, 132, 199, 0.08)',
-    color: '#38bdf8',
-    border: '1.5px solid rgba(2, 132, 199, 0.4)',
+    background: 'var(--node-default-bg)',
+    color: 'var(--node-default-color)',
+    border: '1.5px solid var(--node-default-border)',
     borderRadius: '10px',
     padding: '10px 14px',
     fontSize: '13px',
@@ -221,6 +223,15 @@ export default function App() {
   const nodeCounter = useRef(10);
   const [runTour, setRunTour] = useState(false);
   const [personaOpen, setPersonaOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem('aegispath_theme');
+    return savedTheme || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('aegispath_theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     const hasSeen = localStorage.getItem('aegispath_has_seen_tour');
@@ -259,6 +270,12 @@ export default function App() {
       return prev;
     });
   };
+
+  const handleDeleteNode = useCallback((nodeId) => {
+    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    setSelectedNode((curr) => (curr && curr.id === nodeId ? null : curr));
+  }, [setNodes, setEdges, setSelectedNode]);
 
   const exportGraph = () => {
     const data = {
@@ -896,6 +913,15 @@ export default function App() {
             <span className="btn-label">View Tour</span>
           </button>
 
+          <button
+            className="btn theme-toggle-btn"
+            onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            disabled={loading}
+          >
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            <span className="btn-label">{theme === 'dark' ? 'Light' : 'Dark'} Mode</span>
+          </button>
 
           <button className="btn" onClick={handleResetGraph} title="Reset canvas" disabled={loading}>
             <RefreshCw size={16} />
@@ -1047,6 +1073,7 @@ export default function App() {
           setIsInspectorOpen={setIsInspectorOpen}
           simulationPath={primaryPath}
           updateNodeConfig={updateNodeConfig}
+          onDeleteNode={handleDeleteNode}
         />
         {runTour && <OnboardingTour run={runTour} setRun={setRunTour} />}
       </main>

@@ -151,28 +151,23 @@ export default function OnboardingTour({ run, setRun }) {
       }}
       styles={{
         options: {
-          /* Glass dark background — matches --glass-bg */
-          arrowColor: '#0d1017',
-          backgroundColor: '#0d1017',
-          /* Dim overlay — matches site's modal overlays */
-          overlayColor: 'rgba(8, 10, 15, 0.72)',
-          /* Indigo primary — matches --accent-indigo */
-          primaryColor: '#6366f1',
-          textColor: '#e2e8f0',
-          /* Matches --inspector-width */
+          arrowColor: 'var(--bg-secondary)',
+          backgroundColor: 'var(--bg-secondary)',
+          overlayColor: 'var(--theme-overlay-color)',
+          primaryColor: 'var(--accent-indigo)',
+          textColor: 'var(--text-primary)',
           width: 340,
           zIndex: 10000,
         },
         tooltip: {
-          /* Same glass card style as .simulation-report-panel */
           borderRadius: '12px',
-          border: '1px solid #1e2638',
+          border: '1px solid var(--border-color)',
           boxShadow:
-            '0 0 0 1px rgba(99,102,241,0.12), 0 20px 48px -8px rgba(0,0,0,0.7)',
+            '0 0 0 1px rgba(99,102,241,0.12), var(--shadow-lg)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           padding: '20px 22px',
-          background: 'rgba(13, 16, 23, 0.95)',
+          background: 'var(--bg-secondary)',
         },
         tooltipContainer: {
           textAlign: 'left',
@@ -180,23 +175,21 @@ export default function OnboardingTour({ run, setRun }) {
         tooltipFooter: {
           marginTop: '18px',
           paddingTop: '14px',
-          borderTop: '1px solid #1e2638',
+          borderTop: '1px solid var(--border-color)',
         },
         tooltipFooterSpacer: {
           flex: 1,
         },
-        /* Progress counter — matches --font-mono + --text-muted */
         tooltipTitle: {
           fontSize: '13px',
           fontFamily: "'JetBrains Mono', monospace",
-          color: '#4e5a6b',
+          color: 'var(--text-muted)',
           fontWeight: 500,
           letterSpacing: '0.3px',
           marginBottom: '6px',
         },
-        /* Next button — matches .btn.btn-primary */
         buttonNext: {
-          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+          background: 'linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-violet) 100%)',
           borderRadius: '6px',
           border: 'none',
           color: '#fff',
@@ -209,12 +202,11 @@ export default function OnboardingTour({ run, setRun }) {
           boxShadow: '0 0 14px rgba(99,102,241,0.35)',
           fontFamily: "'Inter', sans-serif",
         },
-        /* Back button — matches secondary .btn */
         buttonBack: {
           background: 'transparent',
-          border: '1px solid #1e2638',
+          border: '1px solid var(--border-color)',
           borderRadius: '6px',
-          color: '#8892a4',
+          color: 'var(--text-secondary)',
           fontSize: '12px',
           fontWeight: 500,
           padding: '7px 14px',
@@ -222,11 +214,10 @@ export default function OnboardingTour({ run, setRun }) {
           marginRight: '8px',
           fontFamily: "'Inter', sans-serif",
         },
-        /* Skip button — matches --text-secondary */
         buttonSkip: {
           background: 'transparent',
           border: 'none',
-          color: '#4e5a6b',
+          color: 'var(--text-muted)',
           fontSize: '12px',
           padding: '7px 10px',
           cursor: 'pointer',
@@ -234,19 +225,17 @@ export default function OnboardingTour({ run, setRun }) {
           letterSpacing: '0.3px',
         },
         buttonClose: {
-          color: '#4e5a6b',
+          color: 'var(--text-muted)',
           width: '14px',
           height: '14px',
         },
-        /* Beacon ring — indigo glow */
         beacon: {
-          inner: '#6366f1',
+          inner: 'var(--accent-indigo)',
           outer: 'rgba(99,102,241,0.3)',
         },
-        /* Spotlight hole in overlay */
         spotlight: {
           borderRadius: '8px',
-          boxShadow: '0 0 0 2px rgba(99,102,241,0.4)',
+          boxShadow: '0 0 0 2px var(--border-active)',
         },
       }}
     />

@@ -53,7 +53,7 @@ export default function Canvas({
         {/* Subtle dot grid backdrop */}
         <Background
           variant={BackgroundVariant.Dots}
-          color="#1e2438"
+          color="var(--border-color)"
           gap={20}
           size={1.2}
         />

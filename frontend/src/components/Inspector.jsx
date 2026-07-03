@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Server, Laptop, Globe, Cpu, AlertTriangle, X } from 'lucide-react';
+import { Shield, Server, Laptop, Globe, Cpu, AlertTriangle, X, Trash2 } from 'lucide-react';
 
 const NodeTypeIcon = ({ nodeType, size = 18 }) => {
   switch (nodeType) {
@@ -33,6 +33,7 @@ export default function Inspector({
   setIsInspectorOpen,
   simulationPath = [],
   updateNodeConfig,
+  onDeleteNode,
 }) {
   const renderReadOnlySpecs = () => {
     if (!selectedNode || !selectedNode.config) return null;
@@ -211,6 +212,41 @@ export default function Inspector({
                 </div>
               </div>
             )}
+            {/* Node Actions */}
+            <div className="inspector-section" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+              <button
+                className="btn btn-danger"
+                style={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  background: 'rgba(244, 63, 94, 0.1)',
+                  color: 'var(--accent-rose)',
+                  borderColor: 'rgba(244, 63, 94, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px',
+                  borderRadius: 'var(--radius-md)',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s, border-color 0.15s',
+                }}
+                onClick={() => onDeleteNode(selectedNode.id)}
+                title="Delete this node from canvas"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(244, 63, 94, 0.2)';
+                  e.currentTarget.style.borderColor = 'var(--accent-rose)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(244, 63, 94, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(244, 63, 94, 0.3)';
+                }}
+              >
+                <Trash2 size={14} />
+                <span>Delete Node</span>
+              </button>
+            </div>
           </div>
         ) : (
           <div className="empty-state">

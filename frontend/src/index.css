@@ -6,13 +6,14 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* ── Design Tokens ── */
-:root {
+:root, [data-theme='dark'] {
   /* Backgrounds */
   --bg-primary:   #080a0f;
   --bg-secondary: #0d1017;
   --bg-tertiary:  #141820;
   --bg-elevated:  #1a2030;
   --bg-card:      rgba(20, 26, 38, 0.7);
+  --bg-subtle:    rgba(255, 255, 255, 0.02);
 
   /* Borders */
   --border-subtle: rgba(255, 255, 255, 0.04);
@@ -34,10 +35,6 @@
   --accent-amber:   #f59e0b;
   --accent-cyan:    #06b6d4;
 
-  /* Typography stacks */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
-
   /* Elevation / Glass */
   --glass-bg:      rgba(13, 16, 23, 0.82);
   --glass-border:  rgba(255, 255, 255, 0.05);
@@ -45,6 +42,32 @@
   --shadow-md:     0 4px 16px rgba(0, 0, 0, 0.5);
   --shadow-lg:     0 10px 32px rgba(0, 0, 0, 0.6);
   --shadow-glow:   0 0 24px rgba(99, 102, 241, 0.12);
+  --theme-overlay-color: rgba(8, 10, 15, 0.72);
+
+  /* Flow node variables */
+  --node-internet-bg: #1e293b;
+  --node-internet-color: #94a3b8;
+  --node-internet-border: #334155;
+
+  --node-firewall-bg: rgba(244, 63, 94, 0.08);
+  --node-firewall-color: #f43f5e;
+  --node-firewall-border: rgba(244, 63, 94, 0.45);
+
+  --node-server-bg: rgba(99, 102, 241, 0.08);
+  --node-server-color: #818cf8;
+  --node-server-border: rgba(99, 102, 241, 0.45);
+
+  --node-default-bg: rgba(2, 132, 199, 0.08);
+  --node-default-color: #38bdf8;
+  --node-default-border: rgba(2, 132, 199, 0.4);
+
+  --edge-color: #2d3748;
+  --logo-gradient: linear-gradient(130deg, #e2e8f0 30%, #64748b 100%);
+  --minimap-mask: rgba(8, 10, 15, 0.6);
+
+  /* Typography stacks */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
 
   /* Layout */
   --sidebar-width:   300px;
@@ -53,6 +76,66 @@
   --radius-sm:  6px;
   --radius-md:  10px;
   --radius-lg:  14px;
+}
+
+[data-theme='light'] {
+  /* Backgrounds */
+  --bg-primary:   #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary:  #e2e8f0;
+  --bg-elevated:  #ffffff;
+  --bg-card:      rgba(255, 255, 255, 0.8);
+  --bg-subtle:    rgba(15, 23, 42, 0.03);
+
+  /* Borders */
+  --border-subtle: rgba(15, 23, 42, 0.04);
+  --border-color:  #cbd5e1;
+  --border-active: rgba(99, 102, 241, 0.6);
+
+  /* Typography */
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
+  --text-inverse:   #ffffff;
+
+  /* Brand / Accent */
+  --accent-blue:    #2563eb;
+  --accent-indigo:  #4f46e5;
+  --accent-violet:  #7c3aed;
+  --accent-emerald: #059669;
+  --accent-rose:    #e11d48;
+  --accent-amber:   #d97706;
+  --accent-cyan:    #0891b2;
+
+  /* Elevation / Glass */
+  --glass-bg:      rgba(241, 245, 249, 0.85);
+  --glass-border:  rgba(15, 23, 42, 0.06);
+  --shadow-sm:     0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md:     0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg:     0 10px 32px rgba(0, 0, 0, 0.12);
+  --shadow-glow:   0 0 24px rgba(99, 102, 241, 0.08);
+  --theme-overlay-color: rgba(15, 23, 42, 0.4);
+
+  /* Flow node variables */
+  --node-internet-bg: #e2e8f0;
+  --node-internet-color: #475569;
+  --node-internet-border: #cbd5e1;
+
+  --node-firewall-bg: rgba(244, 63, 94, 0.08);
+  --node-firewall-color: #e11d48;
+  --node-firewall-border: rgba(244, 63, 94, 0.55);
+
+  --node-server-bg: rgba(99, 102, 241, 0.08);
+  --node-server-color: #4f46e5;
+  --node-server-border: rgba(99, 102, 241, 0.55);
+
+  --node-default-bg: rgba(2, 132, 199, 0.08);
+  --node-default-color: #0284c7;
+  --node-default-border: rgba(2, 132, 199, 0.55);
+
+  --edge-color: #94a3b8;
+  --logo-gradient: linear-gradient(130deg, #0f172a 30%, #475569 100%);
+  --minimap-mask: rgba(241, 245, 249, 0.6);
 }
 
 /* ── Reset ── */
@@ -144,7 +227,7 @@ body {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 2.5px;
-  background: linear-gradient(130deg, #e2e8f0 30%, #64748b 100%);
+  background: var(--logo-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -429,7 +512,7 @@ body {
   align-items: center;
   gap: 11px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   cursor: grab;
@@ -1053,6 +1136,11 @@ body {
 
 .react-flow__edge-path {
   transition: stroke 0.3s, stroke-width 0.3s;
+  stroke: var(--edge-color) !important;
+}
+
+.react-flow__arrowhead path {
+  fill: var(--edge-color) !important;
 }
 
 .react-flow__handle {
@@ -1067,4 +1155,15 @@ body {
 .react-flow__handle:hover {
   background: var(--accent-indigo) !important;
   border-color: var(--accent-indigo) !important;
+}
+
+.react-flow__minimap {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.react-flow__minimap-mask {
+  fill: var(--minimap-mask) !important;
 }
