@@ -26,6 +26,18 @@ AegisPath is a full-stack cybersecurity simulation platform. Security engineers 
 
 ---
 
+## Why This Matters
+
+Most security teams model threats on whiteboards or in spreadsheets — static, slow, and disconnected from how networks actually behave. AegisPath makes threat modeling **interactive and quantitative**:
+
+- **Visualise blast radius before an incident.** See exactly which path an attacker would take through your real topology, not a hypothetical one.
+- **Persona-aware routing changes the answer.** A Script Kiddie and an APT actor take measurably different paths through the same network — AegisPath shows you both.
+- **Risk is scored, not guessed.** Every node's CVSS score, patch state, and credential hygiene feeds directly into a 0–100 risk score with full factor attribution.
+- **Remediations are specific, not generic.** Instead of "apply patches," the engine tells you *which nodes* are unpatched, *which ones* have exploitable credentials, and *which links* are cleartext — so engineers fix the right things first.
+- **It runs entirely locally.** No data leaves your machine. The simulation engine, pathfinder, and report generator are all self-hosted.
+
+---
+
 ## Architecture
 
 ```
