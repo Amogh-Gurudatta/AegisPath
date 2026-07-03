@@ -3,7 +3,7 @@
    Enterprise Cybersecurity Threat Topology Simulator
 ═══════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 /* ── Design Tokens ── */
 :root, [data-theme='dark'] {
@@ -66,8 +66,9 @@
   --minimap-mask: rgba(8, 10, 15, 0.6);
 
   /* Typography stacks */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-heading: 'Space Grotesk', sans-serif;
 
   /* Layout */
   --sidebar-width:   300px;
@@ -160,6 +161,22 @@ body {
   overflow: hidden;
   height: 100vh;
   width: 100vw;
+}
+
+h1, h2, h3, h4, h5, h6,
+.logo-text,
+.sidebar-title,
+.section-label,
+.inspector-title,
+.inspector-node-name,
+.inspector-section-title,
+.empty-title,
+.report-title,
+.factors-title,
+.btn,
+.btn-label,
+.panel-tab {
+  font-family: var(--font-heading) !important;
 }
 
 #root {
