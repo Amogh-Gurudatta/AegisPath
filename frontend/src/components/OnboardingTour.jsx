@@ -1,12 +1,11 @@
-import React from 'react';
 import { Joyride, STATUS } from 'react-joyride';
 
 /* ─────────────────────────────────────────
    Step content helper — matches site card style
-───────────────────────────────────────── */
+   ───────────────────────────────────────── */
 function StepContent({ icon, title, body }) {
   return (
-    <div style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
+    <div style={{ fontFamily: "var(--font-sans)" }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
         <span style={{
           fontSize: '16px',
@@ -21,15 +20,15 @@ function StepContent({ icon, title, body }) {
           fontWeight: 700,
           letterSpacing: '0.5px',
           textTransform: 'uppercase',
-          color: '#6366f1',
-          fontFamily: "'JetBrains Mono', monospace",
+          color: 'var(--accent-indigo)',
+          fontFamily: "var(--font-heading)",
         }}>{title}</span>
       </div>
       <p style={{
         margin: 0,
         fontSize: '13px',
         lineHeight: 1.65,
-        color: '#8892a4',
+        color: 'var(--text-secondary)',
       }}>{body}</p>
     </div>
   );
@@ -42,7 +41,7 @@ export default function OnboardingTour({ run, setRun }) {
       placement: 'center',
       disableBeacon: true,
       content: (
-        <div style={{ fontFamily: "'Inter', -apple-system, sans-serif", textAlign: 'center', padding: '4px 0' }}>
+        <div style={{ fontFamily: "var(--font-sans)", textAlign: 'center', padding: '4px 0' }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -60,13 +59,14 @@ export default function OnboardingTour({ run, setRun }) {
             fontSize: '17px',
             fontWeight: 700,
             letterSpacing: '-0.2px',
-            color: '#e2e8f0',
+            color: 'var(--text-primary)',
+            fontFamily: "var(--font-heading)",
           }}>Welcome to AegisPath</h3>
           <p style={{
-            margin: '0 0 4px',
+            margin: '0 auto 4px', // Centered properly using auto margins for fixed width
             fontSize: '13px',
             lineHeight: 1.65,
-            color: '#8892a4',
+            color: 'var(--text-secondary)',
             maxWidth: '280px',
           }}>
             Enterprise-grade interactive threat topology simulator. Let's take a quick tour of the key features.
@@ -162,8 +162,7 @@ export default function OnboardingTour({ run, setRun }) {
         tooltip: {
           borderRadius: '12px',
           border: '1px solid var(--border-color)',
-          boxShadow:
-            '0 0 0 1px rgba(99,102,241,0.12), var(--shadow-lg)',
+          boxShadow: '0 0 0 1px rgba(99,102,241,0.12), var(--shadow-lg)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           padding: '20px 22px',
@@ -182,47 +181,11 @@ export default function OnboardingTour({ run, setRun }) {
         },
         tooltipTitle: {
           fontSize: '13px',
-          fontFamily: "'JetBrains Mono', monospace",
+          fontFamily: 'var(--font-mono)',
           color: 'var(--text-muted)',
           fontWeight: 500,
           letterSpacing: '0.3px',
           marginBottom: '6px',
-        },
-        buttonNext: {
-          background: 'linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-violet) 100%)',
-          borderRadius: '6px',
-          border: 'none',
-          color: '#fff',
-          fontWeight: 600,
-          fontSize: '12px',
-          letterSpacing: '0.3px',
-          padding: '7px 16px',
-          cursor: 'pointer',
-          outline: 'none',
-          boxShadow: '0 0 14px rgba(99,102,241,0.35)',
-          fontFamily: "'Inter', sans-serif",
-        },
-        buttonBack: {
-          background: 'transparent',
-          border: '1px solid var(--border-color)',
-          borderRadius: '6px',
-          color: 'var(--text-secondary)',
-          fontSize: '12px',
-          fontWeight: 500,
-          padding: '7px 14px',
-          cursor: 'pointer',
-          marginRight: '8px',
-          fontFamily: "'Inter', sans-serif",
-        },
-        buttonSkip: {
-          background: 'transparent',
-          border: 'none',
-          color: 'var(--text-muted)',
-          fontSize: '12px',
-          padding: '7px 10px',
-          cursor: 'pointer',
-          fontFamily: "'JetBrains Mono', monospace",
-          letterSpacing: '0.3px',
         },
         buttonClose: {
           color: 'var(--text-muted)',
