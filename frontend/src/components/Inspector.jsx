@@ -1,22 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Server, Laptop, Globe, Cpu, AlertTriangle, X, Trash2, Link2 } from 'lucide-react';
+import { Shield, Server, Laptop, Globe, Cpu, AlertTriangle, X, Trash2, Link2, Network, Database, GitMerge, Cloud } from 'lucide-react';
 
 const NodeTypeIcon = ({ nodeType, size = 18 }) => {
   switch (nodeType) {
-    case 'firewall':  return <Shield size={size} />;
-    case 'server':    return <Server size={size} />;
-    case 'internet':  return <Globe size={size} />;
-    default:          return <Laptop size={size} />;
+    case 'firewall':     return <Shield size={size} />;
+    case 'server':       return <Server size={size} />;
+    case 'internet':     return <Globe size={size} />;
+    case 'router':       return <Network size={size} />;
+    case 'database':     return <Database size={size} />;
+    case 'loadbalancer': return <GitMerge size={size} />;
+    case 'cloud':        return <Cloud size={size} />;
+    default:             return <Laptop size={size} />;
   }
 };
 
 const NodeTypeClass = (nodeType) => {
   switch (nodeType) {
-    case 'firewall':  return 'palette-icon-firewall';
-    case 'server':    return 'palette-icon-server';
-    case 'internet':  return 'palette-icon-internet';
-    default:          return 'palette-icon-workstation';
+    case 'firewall':     return 'palette-icon-firewall';
+    case 'server':       return 'palette-icon-server';
+    case 'internet':     return 'palette-icon-internet';
+    case 'router':       return 'palette-icon-router';
+    case 'database':     return 'palette-icon-database';
+    case 'loadbalancer': return 'palette-icon-loadbalancer';
+    case 'cloud':        return 'palette-icon-cloud';
+    default:             return 'palette-icon-workstation';
   }
+};
+
+const validateIp = (ip) => {
+  const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+  return ipv4Regex.test(ip);
+};
+
+const validateIpOrCidr = (ip) => {
+  const ipv4CidrRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:\/(?:[0-9]|[12][0-9]|3[0-2]))?$/;
+  return ipv4CidrRegex.test(ip);
 };
 
 const formatConfigValue = (val) => {
@@ -67,8 +85,11 @@ export default function Inspector({
 }) {
   // Local text state for list-type fields (allows comfortable typing before blur-commit)
   const [labelText,      setLabelText]      = useState('');
+  const [ipText,         setIpText]         = useState('');
   const [allowedIpsText, setAllowedIpsText] = useState('');
   const [portsText,      setPortsText]      = useState('');
+  const [cvssText,       setCvssText]       = useState('');
+  const [errors,         setErrors]         = useState({});
 
   // Custom property add-row state
   const [newPropKey,     setNewPropKey]     = useState('');
@@ -82,6 +103,9 @@ export default function Inspector({
     const ports = selectedNode.config?.open_ports  || [];
     setAllowedIpsText(Array.isArray(ips)   ? ips.join(', ')          : String(ips));
     setPortsText(     Array.isArray(ports) ? ports.join(', ')         : String(ports));
+    setIpText(selectedNode.config?.ip_address || selectedNode.config?.ip || '');
+    setCvssText(selectedNode.config?.cvss_score !== undefined ? String(selectedNode.config.cvss_score) : '0');
+    setErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNode?.id]);
 
@@ -335,11 +359,32 @@ export default function Inspector({
               <span className="metadata-key">IP Address</span>
               <input
                 type="text"
-                placeholder="192.168.1.x"
-                value={cfg.ip_address || cfg.ip || ''}
-                onChange={(e) => updateNodeConfig(selectedNode.id, { ip_address: e.target.value })}
-                style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
+                placeholder="10.0.x.y"
+                value={ipText}
+                onChange={(e) => {
+                  setIpText(e.target.value);
+                  if (errors.ip_address) setErrors((prev) => ({ ...prev, ip_address: null }));
+                }}
+                onBlur={() => {
+                  const val = ipText.trim();
+                  if (!val || validateIp(val)) {
+                    updateNodeConfig(selectedNode.id, { ip_address: val });
+                    setErrors((prev) => ({ ...prev, ip_address: null }));
+                  } else {
+                    setErrors((prev) => ({ ...prev, ip_address: 'Invalid IPv4 address format (e.g. 10.0.1.5).' }));
+                  }
+                }}
+                style={{
+                  ...inputStyle,
+                  fontFamily: 'var(--font-mono)',
+                  borderColor: errors.ip_address ? 'var(--accent-rose)' : 'var(--border-color)',
+                }}
               />
+              {errors.ip_address && (
+                <span style={{ fontSize: '11px', color: 'var(--accent-rose)', marginTop: '2px' }}>
+                  {errors.ip_address}
+                </span>
+              )}
             </div>
 
             {/* ── Firewall-specific fields ── */}
@@ -354,14 +399,41 @@ export default function Inspector({
                     type="text"
                     placeholder="10.0.0.1, 0.0.0.0/0"
                     value={allowedIpsText}
-                    onChange={(e) => setAllowedIpsText(e.target.value)}
-                    onBlur={() => {
-                      const ips = allowedIpsText.split(',').map((s) => s.trim()).filter(Boolean);
-                      updateNodeConfig(selectedNode.id, { allowed_ips: ips });
+                    onChange={(e) => {
+                      setAllowedIpsText(e.target.value);
+                      if (errors.allowed_ips) setErrors((prev) => ({ ...prev, allowed_ips: null }));
                     }}
-                    style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
+                    onBlur={() => {
+                      const rawVal = allowedIpsText.trim();
+                      if (!rawVal) {
+                        updateNodeConfig(selectedNode.id, { allowed_ips: [] });
+                        setErrors((prev) => ({ ...prev, allowed_ips: null }));
+                        return;
+                      }
+                      const ips = rawVal.split(',').map((s) => s.trim()).filter(Boolean);
+                      const invalidIps = ips.filter((ip) => !validateIpOrCidr(ip));
+                      if (invalidIps.length === 0) {
+                        updateNodeConfig(selectedNode.id, { allowed_ips: ips });
+                        setErrors((prev) => ({ ...prev, allowed_ips: null }));
+                      } else {
+                        setErrors((prev) => ({
+                          ...prev,
+                          allowed_ips: `Invalid IPv4/CIDR formats: ${invalidIps.join(', ')}`,
+                        }));
+                      }
+                    }}
+                    style={{
+                      ...inputStyle,
+                      fontFamily: 'var(--font-mono)',
+                      borderColor: errors.allowed_ips ? 'var(--accent-rose)' : 'var(--border-color)',
+                    }}
                   />
-                  {allowedIpsText.includes('0.0.0.0/0') && (
+                  {errors.allowed_ips && (
+                    <span style={{ fontSize: '11px', color: 'var(--accent-rose)', marginTop: '2px' }}>
+                      {errors.allowed_ips}
+                    </span>
+                  )}
+                  {allowedIpsText.includes('0.0.0.0/0') && !errors.allowed_ips && (
                     <span style={{ fontSize: '11px', color: 'var(--accent-amber)' }}>
                       ⚠ Wildcard ACL — any IP can traverse this firewall.
                     </span>
@@ -377,15 +449,49 @@ export default function Inspector({
                     type="text"
                     placeholder="80, 443, 8080"
                     value={portsText}
-                    onChange={(e) => setPortsText(e.target.value)}
-                    onBlur={() => {
-                      const ports = portsText.split(',')
-                        .map((s) => parseInt(s.trim(), 10))
-                        .filter((n) => !isNaN(n));
-                      updateNodeConfig(selectedNode.id, { open_ports: ports });
+                    onChange={(e) => {
+                      setPortsText(e.target.value);
+                      if (errors.open_ports) setErrors((prev) => ({ ...prev, open_ports: null }));
                     }}
-                    style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
+                    onBlur={() => {
+                      const rawVal = portsText.trim();
+                      if (!rawVal) {
+                        updateNodeConfig(selectedNode.id, { open_ports: [] });
+                        setErrors((prev) => ({ ...prev, open_ports: null }));
+                        return;
+                      }
+                      const parts = rawVal.split(',').map((s) => s.trim()).filter(Boolean);
+                      const invalidPorts = [];
+                      const validPorts = [];
+                      for (const part of parts) {
+                        const num = Number(part);
+                        if (Number.isInteger(num) && num >= 1 && num <= 65535 && String(num) === part) {
+                          validPorts.push(num);
+                        } else {
+                          invalidPorts.push(part);
+                        }
+                      }
+                      if (invalidPorts.length === 0) {
+                        updateNodeConfig(selectedNode.id, { open_ports: validPorts });
+                        setErrors((prev) => ({ ...prev, open_ports: null }));
+                      } else {
+                        setErrors((prev) => ({
+                          ...prev,
+                          open_ports: `Invalid ports (1-65535): ${invalidPorts.join(', ')}`,
+                        }));
+                      }
+                    }}
+                    style={{
+                      ...inputStyle,
+                      fontFamily: 'var(--font-mono)',
+                      borderColor: errors.open_ports ? 'var(--accent-rose)' : 'var(--border-color)',
+                    }}
                   />
+                  {errors.open_ports && (
+                    <span style={{ fontSize: '11px', color: 'var(--accent-rose)', marginTop: '2px' }}>
+                      {errors.open_ports}
+                    </span>
+                  )}
                 </div>
               </>
             )}
@@ -403,24 +509,89 @@ export default function Inspector({
                     type="text"
                     placeholder="22, 80, 443"
                     value={portsText}
-                    onChange={(e) => setPortsText(e.target.value)}
-                    onBlur={() => {
-                      const ports = portsText.split(',')
-                        .map((s) => parseInt(s.trim(), 10))
-                        .filter((n) => !isNaN(n));
-                      updateNodeConfig(selectedNode.id, { open_ports: ports });
+                    onChange={(e) => {
+                      setPortsText(e.target.value);
+                      if (errors.open_ports) setErrors((prev) => ({ ...prev, open_ports: null }));
                     }}
-                    style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
+                    onBlur={() => {
+                      const rawVal = portsText.trim();
+                      if (!rawVal) {
+                        updateNodeConfig(selectedNode.id, { open_ports: [] });
+                        setErrors((prev) => ({ ...prev, open_ports: null }));
+                        return;
+                      }
+                      const parts = rawVal.split(',').map((s) => s.trim()).filter(Boolean);
+                      const invalidPorts = [];
+                      const validPorts = [];
+                      for (const part of parts) {
+                        const num = Number(part);
+                        if (Number.isInteger(num) && num >= 1 && num <= 65535 && String(num) === part) {
+                          validPorts.push(num);
+                        } else {
+                          invalidPorts.push(part);
+                        }
+                      }
+                      if (invalidPorts.length === 0) {
+                        updateNodeConfig(selectedNode.id, { open_ports: validPorts });
+                        setErrors((prev) => ({ ...prev, open_ports: null }));
+                      } else {
+                        setErrors((prev) => ({
+                          ...prev,
+                          open_ports: `Invalid ports (1-65535): ${invalidPorts.join(', ')}`,
+                        }));
+                      }
+                    }}
+                    style={{
+                      ...inputStyle,
+                      fontFamily: 'var(--font-mono)',
+                      borderColor: errors.open_ports ? 'var(--accent-rose)' : 'var(--border-color)',
+                    }}
                   />
+                  {errors.open_ports && (
+                    <span style={{ fontSize: '11px', color: 'var(--accent-rose)', marginTop: '2px' }}>
+                      {errors.open_ports}
+                    </span>
+                  )}
                 </div>
 
                 {/* CVSS Score */}
                 <div className="metadata-row" style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderBottom: 'none' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                     <span className="metadata-key">CVSS Score</span>
-                    <span className="metadata-val" style={{ color: 'var(--accent-amber)', fontWeight: 'bold', fontFamily: 'var(--font-mono)' }}>
-                      {(cfg.cvss_score ?? 0).toFixed(1)}
-                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={cvssText}
+                      onChange={(e) => {
+                        setCvssText(e.target.value);
+                        if (errors.cvss_score) setErrors((prev) => ({ ...prev, cvss_score: null }));
+                      }}
+                      onBlur={() => {
+                        const val = parseFloat(cvssText);
+                        if (!isNaN(val) && val >= 0 && val <= 10) {
+                          const rounded = Math.round(val * 10) / 10;
+                          updateNodeConfig(selectedNode.id, { cvss_score: rounded });
+                          setCvssText(String(rounded));
+                          setErrors((prev) => ({ ...prev, cvss_score: null }));
+                        } else {
+                          setErrors((prev) => ({
+                            ...prev,
+                            cvss_score: 'CVSS score must be between 0.0 and 10.0.',
+                          }));
+                        }
+                      }}
+                      style={{
+                        ...inputStyle,
+                        width: '64px',
+                        padding: '4px 8px',
+                        fontSize: '12px',
+                        textAlign: 'right',
+                        fontFamily: 'var(--font-mono)',
+                        borderColor: errors.cvss_score ? 'var(--accent-rose)' : 'var(--border-color)',
+                      }}
+                    />
                   </div>
                   <input
                     type="range"
@@ -428,9 +599,19 @@ export default function Inspector({
                     max="10"
                     step="0.1"
                     value={cfg.cvss_score ?? 0}
-                    onChange={(e) => updateNodeConfig(selectedNode.id, { cvss_score: parseFloat(e.target.value) })}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      updateNodeConfig(selectedNode.id, { cvss_score: val });
+                      setCvssText(String(val));
+                      if (errors.cvss_score) setErrors((prev) => ({ ...prev, cvss_score: null }));
+                    }}
                     style={{ width: '100%', accentColor: 'var(--accent-amber)', cursor: 'pointer' }}
                   />
+                  {errors.cvss_score && (
+                    <span style={{ fontSize: '11px', color: 'var(--accent-rose)', marginTop: '2px' }}>
+                      {errors.cvss_score}
+                    </span>
+                  )}
                 </div>
 
                 {/* Vulnerability checkboxes */}

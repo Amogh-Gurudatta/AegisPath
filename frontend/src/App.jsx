@@ -648,34 +648,17 @@ export default function App() {
         setShowReport(true);
       }
     } catch (err) {
-      console.warn('[AegisPath] Backend unavailable. Running local fallback.', err);
+      console.error('[AegisPath] Simulation failed:', err);
 
-      const dummyPath =
-        nodes.length >= 2 ? nodes.map((n) => n.id) : [];
+      setSimulationPaths([]);
+      setContributingFactors([]);
+      setSimulationReport([]);
+      setRemediationPlan([]);
+      setRiskScore(0);
 
-      const fallbackFactors = [
-        'Backend server unreachable — running offline fallback simulation.',
-        'Start the FastAPI server on port 8000 for live stateful analysis.',
-        `Persona: "${PERSONAS.find((p) => p.id === persona)?.label}" applied (offline mode ignores persona weights).`,
-      ];
-
-      const fallbackRemediations = [
-        "Verify local server connectivity and network infrastructure configuration.",
-        "Ensure uvicorn is running on port 8000 to fetch real-time mitigations."
-      ];
-
-      const paths = [dummyPath];
-
-      setSimulationPaths(paths);
-      setContributingFactors(fallbackFactors);
-      setSimulationReport(fallbackFactors);
-      setRemediationPlan(fallbackRemediations);
-      setRiskScore(45.0);
-
-      await runSequentialAnimation(paths);
       setSimulationStatus('error');
-      setShowReport(true);
-      setError('Offline mode: backend unavailable. Results are non-deterministic.');
+      setShowReport(false);
+      setError(`Simulation failed: ${err.message || 'Backend unreachable'}`);
     } finally {
       setLoading(false);
     }
