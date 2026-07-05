@@ -19,10 +19,12 @@ AegisPath is a full-stack cybersecurity simulation platform. Security engineers 
 5. Runs **multi-path analysis** (`nx.shortest_simple_paths`) returning the **top 3 attack routes** by cost
 6. Visualises the primary path hop-by-hop in **red** and alternative paths in **amber/dashed** style
 7. Delivers a **Risk Assessment Report** (0–100 score) with colour-coded severity, contributing factors, and deduplicated **actionable mitigations**
-8. Detects **cleartext links** (`unencrypted: true` edge config) and includes them in the risk score and contributing factors
-9. Generates and downloads an **Enterprise PDF report** — canvas screenshot, date, persona, risk score, factors, and mitigations
-10. Supports **JSON import/export** to save and reload complete network topologies
-11. Includes a **guided onboarding tour** (React Joyride) with a themed tooltip walkthrough of every panel
+8. Maps compromised hops to **MITRE ATT&CK® techniques** (e.g. Initial Access, Lateral Movement) and displays them in the report
+9. Supports live **CVE lookups via NIST NVD**, auto-filling CVSS scores and descriptions based on real CVE IDs
+10. Detects **cleartext links** (`unencrypted: true` edge config) and includes them in the risk score and contributing factors
+11. Generates and downloads an **Enterprise PDF report** — canvas screenshot, date, persona, risk score, factors, MITRE tactics, and mitigations
+12. Supports **JSON import/export** to save and reload complete network topologies
+13. Includes a **guided onboarding tour** (React Joyride) with a themed tooltip walkthrough of every panel
 
 ---
 
@@ -33,8 +35,9 @@ Most security teams model threats on whiteboards or in spreadsheets — static, 
 - **Visualise blast radius before an incident.** See exactly which path an attacker would take through your real topology, not a hypothetical one.
 - **Persona-aware routing changes the answer.** A Script Kiddie and an APT actor take measurably different paths through the same network — AegisPath shows you both.
 - **Risk is scored, not guessed.** Every node's CVSS score, patch state, and credential hygiene feeds directly into a 0–100 risk score with full factor attribution.
+- **MITRE ATT&CK mapped natively.** Understand *how* an attacker moves. The engine automatically tags compromised hops with standard T-codes (e.g. T1190, T1021).
 - **Remediations are specific, not generic.** Instead of "apply patches," the engine tells you *which nodes* are unpatched, *which ones* have exploitable credentials, and *which links* are cleartext — so engineers fix the right things first.
-- **It runs entirely locally.** No data leaves your machine. The simulation engine, pathfinder, and report generator are all self-hosted.
+- **It runs entirely locally.** No data leaves your machine (except voluntary CVE lookups). The simulation engine, pathfinder, and report generator are all self-hosted.
 
 ---
 
@@ -120,6 +123,10 @@ The **Component Library** on the left panel contains three draggable node types:
 | **Firewall Guard** | 🛡️ | Filters and controls traffic between network segments |
 | **Enterprise Server** | 🖥️ | Hosts services, databases, and internal applications |
 | **User Workstation** | 💻 | Endpoints used for lateral movement pivots |
+| **Network Router** | 🖧 | Core networking infrastructure |
+| **Database** | 🗄️ | Data storage containing high-value assets |
+| **Load Balancer** | ⚖️ | Distributes incoming traffic |
+| **Cloud Service** | ☁️ | External or internal cloud-hosted resources |
 
 Drag any node onto the canvas. Click the collapse `◧` icon in the library header to hide the panel and gain more canvas space — a floating tab appears on the left edge to reopen it.
 
@@ -140,11 +147,13 @@ Click any node to open the **Node Inspector** on the right. Configurable fields:
 | Property | Effect on simulation |
 |----------|----------------------|
 | **IP Address** | Used for IP-whitelist bypass checks on firewalls |
+| **CVE ID** | Paste a CVE to auto-fetch details from NIST NVD |
 | **CVSS Score** (0–10) | Higher = lower traversal cost = more attractive to attacker |
 | **Has RCE Vulnerability** | Grants −99 cost discount for Script Kiddie persona |
 | **Has Weak Credentials** | Grants −80 cost discount for APT persona |
 | **Is Patched** | `false` raises risk score +10 and generates a remediation |
 | **Open Ports** | Shared ports between adjacent compromised nodes lower traversal cost |
+| **MITRE ATT&CK Tags** | Manually attach T-codes (e.g. T1078.003) to the node |
 | **Firewall Enabled** | Adds 9999 base cost unless source IP is whitelisted |
 | **Whitelisted IPs** | Source IPs that bypass firewall cost (wildcard: `0.0.0.0/0`) |
 

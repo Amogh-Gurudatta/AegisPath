@@ -106,7 +106,7 @@ export default function OnboardingTour({ run, setRun }) {
         <StepContent
           icon="🔧"
           title="Inspector Panel"
-          body="Click a node to edit its label, IP, CVSS score, open ports, patch status, and vulnerability flags. Click an edge to toggle cleartext mode. Add or delete arbitrary custom properties. Mark multiple nodes as Attacker Entry Points or High-Value Targets."
+          body="Click a node to edit its label, IP, ports, and vulnerabilities. Look up CVE IDs to auto-fill CVSS scores from NIST NVD. Add manual MITRE ATT&CK tags. Click an edge to toggle cleartext mode. Add or delete custom properties. Mark nodes as Entry Points or Targets."
         />
       ),
     },
