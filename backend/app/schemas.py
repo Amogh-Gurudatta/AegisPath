@@ -35,4 +35,6 @@ class SimulationResponse(BaseModel):
     recommended_actions: List[str] = []
     risk_score: float
     message: str
-
+    # MITRE ATT&CK annotations
+    attack_path_techniques: List[Dict[str, Any]] = []   # unique techniques for primary path
+    primary_hop_techniques: List[List[Dict[str, Any]]] = []  # per-hop breakdown

@@ -32,6 +32,8 @@ def simulate_topology(graph_data: NetworkGraph):
         "contributing_factors": result["contributing_factors"],
         "recommended_actions": result.get("recommended_actions", []),
         "risk_score": result["risk_score"],
+        "attack_path_techniques": result.get("attack_path_techniques", []),
+        "primary_hop_techniques": result.get("primary_hop_techniques", []),
         "message": f"Successfully simulated graph containing {len(graph_data.nodes)} nodes and {len(graph_data.edges)} edges."
     }
 

@@ -45,11 +45,11 @@ const formatConfigValue = (val) => {
   return String(val);
 };
 
-// Keys managed by the editable UI — excluded from the read-only System Specs block
+// Keys managed by the editable UI — excluded from the Custom Properties editor
 const EDIT_KEYS = [
   'ip_address', 'cvss_score', 'is_patched', 'has_rce_vulnerability',
   'has_weak_credentials', 'is_attacker_entry', 'is_target_asset',
-  'allowed_ips', 'open_ports',
+  'allowed_ips', 'open_ports', 'cve_id', 'attack_techniques',
 ];
 
 const inputStyle = {
@@ -95,19 +95,32 @@ export default function Inspector({
   const [newPropKey,     setNewPropKey]     = useState('');
   const [newPropVal,     setNewPropVal]     = useState('');
 
+  // CVE lookup state
+  const [cveInput,       setCveInput]       = useState('');
+  const [cveLoading,     setCveLoading]     = useState(false);
+  const [cveError,       setCveError]       = useState(null);
+  const [cveSummary,     setCveSummary]     = useState(null);
+
+  // ATT&CK manual tag state
+  const [techniqueInput, setTechniqueInput] = useState('');
+
   // Sync local state whenever the selected node changes
   useEffect(() => {
     if (!selectedNode) return;
     setLabelText(selectedNode.data?.label || '');
     const ips   = selectedNode.config?.allowed_ips || [];
     const ports = selectedNode.config?.open_ports  || [];
-    setAllowedIpsText(Array.isArray(ips)   ? ips.join(', ')          : String(ips));
-    setPortsText(     Array.isArray(ports) ? ports.join(', ')         : String(ports));
+    setAllowedIpsText(Array.isArray(ips)   ? ips.join(', ')  : String(ips));
+    setPortsText(     Array.isArray(ports) ? ports.join(', ') : String(ports));
     setIpText(selectedNode.config?.ip_address || selectedNode.config?.ip || '');
     setCvssText(selectedNode.config?.cvss_score !== undefined ? String(selectedNode.config.cvss_score) : '0');
+    setCveInput(selectedNode.config?.cve_id || '');
+    setCveError(null);
+    setCveSummary(null);
     setErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNode?.id]);
+
 
   // ── Custom Properties editor (keys not in EDIT_KEYS) ──────────────────────
   const renderCustomProps = () => {
@@ -651,8 +664,235 @@ export default function Inspector({
           </div>
         </div>
 
+        {/* ── CVE Lookup ───────────────────────────────────────────────────────── */}
+        {!isInternet && (
+          <div className="inspector-section">
+            <h4 className="inspector-section-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>CVE Lookup</span>
+              <span style={{ fontSize: '10px', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '2px' }}>via NIST NVD</span>
+            </h4>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="CVE-2021-44228"
+                value={cveInput}
+                onChange={(e) => { setCveInput(e.target.value.toUpperCase()); setCveError(null); setCveSummary(null); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.currentTarget.blur();
+                }}
+                onBlur={async () => {
+                  const id = cveInput.trim();
+                  if (!id) return;
+                  if (!/^CVE-\d{4}-\d+$/i.test(id)) {
+                    setCveError('Format must be CVE-YYYY-NNNNN');
+                    return;
+                  }
+                  setCveLoading(true);
+                  setCveError(null);
+                  setCveSummary(null);
+                  try {
+                    const res = await fetch(`https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${id}`);
+                    if (!res.ok) throw new Error(`NVD responded with ${res.status}`);
+                    const data = await res.json();
+                    const vuln = data.vulnerabilities?.[0]?.cve;
+                    if (!vuln) throw new Error('CVE not found in NVD database');
+                    const m31 = vuln.metrics?.cvssMetricV31?.[0];
+                    const m30 = vuln.metrics?.cvssMetricV30?.[0];
+                    const m2  = vuln.metrics?.cvssMetricV2?.[0];
+                    const metric = m31 || m30 || m2;
+                    const score = metric?.cvssData?.baseScore;
+                    const desc  = vuln.descriptions?.find((d) => d.lang === 'en')?.value || '';
+                    if (score !== undefined) {
+                      const rounded = Math.round(score * 10) / 10;
+                      updateNodeConfig(selectedNode.id, { cvss_score: rounded, cve_id: id });
+                      setCvssText(String(rounded));
+                    } else {
+                      updateNodeConfig(selectedNode.id, { cve_id: id });
+                    }
+                    setCveSummary({
+                      score,
+                      severity: metric?.cvssData?.baseSeverity,
+                      version: m31 ? '3.1' : m30 ? '3.0' : '2.0',
+                      description: desc.length > 160 ? desc.slice(0, 160) + '…' : desc,
+                    });
+                  } catch (err) {
+                    setCveError(err.message || 'Lookup failed');
+                  } finally {
+                    setCveLoading(false);
+                  }
+                }}
+                style={{
+                  ...inputStyle,
+                  flex: 1,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '12px',
+                  borderColor: cveError ? 'var(--accent-rose)' : 'var(--border-color)',
+                }}
+              />
+              {cveLoading && (
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                  ⏳ Looking up…
+                </span>
+              )}
+            </div>
+            {cveError && (
+              <span style={{ fontSize: '11px', color: 'var(--accent-rose)', marginTop: '4px', display: 'block' }}>
+                {cveError}
+              </span>
+            )}
+            {cveSummary && (
+              <div style={{
+                marginTop: '8px',
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                padding: '8px 10px',
+                fontSize: '11.5px',
+                lineHeight: 1.5,
+              }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+                  {cveSummary.score !== undefined && (
+                    <span style={{
+                      background: cveSummary.score >= 9 ? 'rgba(244,63,94,0.15)' : cveSummary.score >= 7 ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.12)',
+                      border: `1px solid ${cveSummary.score >= 9 ? 'rgba(244,63,94,0.4)' : cveSummary.score >= 7 ? 'rgba(245,158,11,0.4)' : 'rgba(99,102,241,0.3)'}`,
+                      color: cveSummary.score >= 9 ? 'var(--accent-rose)' : cveSummary.score >= 7 ? 'var(--accent-amber)' : 'var(--accent-indigo)',
+                      borderRadius: '4px',
+                      padding: '2px 6px',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 700,
+                      fontSize: '11px',
+                    }}>
+                      CVSS {cveSummary.version}: {cveSummary.score}
+                    </span>
+                  )}
+                  {cveSummary.severity && (
+                    <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{cveSummary.severity}</span>
+                  )}
+                  <span style={{ color: 'var(--accent-emerald)', fontSize: '11px', marginLeft: 'auto' }}>✓ CVSS auto-filled</span>
+                </div>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '11px' }}>{cveSummary.description}</p>
+              </div>
+            )}
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
+              Paste a CVE ID and tab/click away to auto-fill the CVSS score from NIST NVD.
+            </p>
+          </div>
+        )}
+
+        {/* ── ATT&CK Technique Tags ─────────────────────────────────────────────── */}
+        {!isInternet && (
+          <div className="inspector-section">
+            <h4 className="inspector-section-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>MITRE ATT&amp;CK Tags</span>
+              <span style={{ fontSize: '10px', fontWeight: 400, color: 'var(--text-muted)' }}>manual</span>
+            </h4>
+
+            {/* Existing tags */}
+            {(cfg.attack_techniques || []).length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '8px' }}>
+                {(cfg.attack_techniques || []).map((tid) => (
+                  <span
+                    key={tid}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: 'rgba(244, 63, 94, 0.08)',
+                      border: '1px solid rgba(244, 63, 94, 0.3)',
+                      borderRadius: '5px',
+                      padding: '3px 7px',
+                      fontSize: '11px',
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--accent-rose)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {tid}
+                    <button
+                      onClick={() => {
+                        const existing = cfg.attack_techniques || [];
+                        updateNodeConfig(selectedNode.id, { attack_techniques: existing.filter((t) => t !== tid) });
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '0 0 0 2px',
+                        fontSize: '11px',
+                        lineHeight: 1,
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent-rose)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
+                      title={`Remove ${tid}`}
+                    >✕</button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Add tag input */}
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="T1190"
+                value={techniqueInput}
+                onChange={(e) => setTechniqueInput(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return;
+                  const id = techniqueInput.trim();
+                  if (!/^T\d{4}(\.\d{3})?$/.test(id)) return;
+                  const existing = cfg.attack_techniques || [];
+                  if (!existing.includes(id)) {
+                    updateNodeConfig(selectedNode.id, { attack_techniques: [...existing, id] });
+                  }
+                  setTechniqueInput('');
+                }}
+                style={{
+                  ...inputStyle,
+                  flex: 1,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '12px',
+                  padding: '6px 10px',
+                }}
+              />
+              <button
+                onClick={() => {
+                  const id = techniqueInput.trim();
+                  if (!/^T\d{4}(\.\d{3})?$/.test(id)) return;
+                  const existing = cfg.attack_techniques || [];
+                  if (!existing.includes(id)) {
+                    updateNodeConfig(selectedNode.id, { attack_techniques: [...existing, id] });
+                  }
+                  setTechniqueInput('');
+                }}
+                disabled={!/^T\d{4}(\.\d{3})?$/.test(techniqueInput.trim())}
+                style={{
+                  flexShrink: 0,
+                  background: 'rgba(244,63,94,0.12)',
+                  border: '1px solid rgba(244,63,94,0.3)',
+                  borderRadius: '6px',
+                  color: 'var(--accent-rose)',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  lineHeight: 1,
+                  padding: '5px 9px',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(244,63,94,0.22)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(244,63,94,0.12)'; }}
+                title="Add technique tag"
+              >+</button>
+            </div>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', lineHeight: 1.4 }}>
+              Tag this node with ATT&amp;CK technique IDs (e.g. T1190, T1078.003). These persist in JSON export.
+            </p>
+          </div>
+        )}
+
         {/* Custom / extra properties (add or delete arbitrary key-value pairs) */}
         {renderCustomProps()}
+
 
         {/* Simulation status for this node */}
         {simulationPath.length > 0 && (

@@ -20,6 +20,8 @@ import {
   HelpCircle,
   Sun,
   Moon,
+  Target,
+  ExternalLink,
 } from 'lucide-react';
 import Canvas from './components/Canvas';
 import Inspector from './components/Inspector';
@@ -216,6 +218,7 @@ export default function App() {
   const [remediationPlan, setRemediationPlan] = useState([]);
   const [riskScore, setRiskScore] = useState(0);
   const [showReport, setShowReport] = useState(false);
+  const [attackTechniques, setAttackTechniques] = useState([]);
   const [persona, setPersona] = useState('standard');
   const [loading, setLoading] = useState(false);
   const [simulationStatus, setSimulationStatus] = useState('idle'); // 'idle' | 'running' | 'complete' | 'error'
@@ -642,6 +645,7 @@ export default function App() {
         setSimulationReport(factors);
         setRemediationPlan(remediations);
         setRiskScore(score);
+        setAttackTechniques(result.attack_path_techniques || []);
 
         await runSequentialAnimation(paths);
         setSimulationStatus('complete');
@@ -655,6 +659,7 @@ export default function App() {
       setSimulationReport([]);
       setRemediationPlan([]);
       setRiskScore(0);
+      setAttackTechniques([]);
 
       setSimulationStatus('error');
       setShowReport(false);
@@ -672,6 +677,7 @@ export default function App() {
     setSimulationReport([]);
     setRemediationPlan([]);
     setRiskScore(0);
+    setAttackTechniques([]);
     setShowReport(false);
     setPersona('standard');
     setSimulationStatus('idle');
@@ -1074,6 +1080,51 @@ export default function App() {
                     <p className="factors-empty">No critical risk factors found on this path.</p>
                   )}
                 </div>
+
+                {/* MITRE ATT&CK Techniques */}
+                {attackTechniques.length > 0 && (
+                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                    <h4 className="factors-title" style={{ color: 'var(--accent-rose)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                      <Target size={12} />
+                      <span>MITRE ATT&amp;CK Techniques Observed</span>
+                    </h4>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {attackTechniques.map((t) => (
+                        <a
+                          key={t.id}
+                          href={t.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`${t.tactic}: ${t.name}`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            background: 'rgba(244, 63, 94, 0.08)',
+                            border: '1px solid rgba(244, 63, 94, 0.3)',
+                            borderRadius: '6px',
+                            padding: '4px 8px',
+                            textDecoration: 'none',
+                            color: 'var(--text-primary)',
+                            fontSize: '11.5px',
+                            fontFamily: 'var(--font-mono)',
+                            transition: 'background 0.15s, border-color 0.15s',
+                            cursor: 'pointer',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(244,63,94,0.18)'; e.currentTarget.style.borderColor = 'rgba(244,63,94,0.6)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(244,63,94,0.08)'; e.currentTarget.style.borderColor = 'rgba(244,63,94,0.3)'; }}
+                        >
+                          <span style={{ color: 'var(--accent-rose)', fontWeight: 700 }}>{t.id}</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>{t.name}</span>
+                          <ExternalLink size={9} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                        </a>
+                      ))}
+                    </div>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                      Hover a badge for tactic context · Click to open MITRE ATT&amp;CK reference
+                    </p>
+                  </div>
+                )}
 
                 {/* Recommended Mitigations */}
                 <div className="remediations-section" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>

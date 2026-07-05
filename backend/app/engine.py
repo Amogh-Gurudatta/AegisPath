@@ -1,7 +1,97 @@
 import itertools
 import networkx as nx
-from typing import List
+from typing import List, Dict, Any
 from app.schemas import NetworkGraph
+
+# ── MITRE ATT&CK Static Technique Mapping ────────────────────────────────────
+# Maps node/edge flags to ATT&CK technique metadata.
+# Source: https://attack.mitre.org/
+ATTACK_TECHNIQUES: Dict[str, Dict[str, str]] = {
+    "external_remote":    {"id": "T1133", "name": "External Remote Services",           "tactic": "Initial Access",          "url": "https://attack.mitre.org/techniques/T1133/"},
+    "rce_vulnerability":  {"id": "T1190", "name": "Exploit Public-Facing Application",  "tactic": "Initial Access",          "url": "https://attack.mitre.org/techniques/T1190/"},
+    "weak_credentials":   {"id": "T1078", "name": "Valid Accounts",                      "tactic": "Defense Evasion",          "url": "https://attack.mitre.org/techniques/T1078/"},
+    "unpatched_host":     {"id": "T1203", "name": "Exploitation for Client Execution",  "tactic": "Execution",              "url": "https://attack.mitre.org/techniques/T1203/"},
+    "service_discovery":  {"id": "T1046", "name": "Network Service Scanning",           "tactic": "Discovery",              "url": "https://attack.mitre.org/techniques/T1046/"},
+    "lateral_movement":   {"id": "T1021", "name": "Remote Services",                    "tactic": "Lateral Movement",        "url": "https://attack.mitre.org/techniques/T1021/"},
+    "proxy_traversal":    {"id": "T1090", "name": "Proxy",                              "tactic": "Command and Control",     "url": "https://attack.mitre.org/techniques/T1090/"},
+    "cleartext_sniff":    {"id": "T1040", "name": "Network Sniffing",                   "tactic": "Credential Access",       "url": "https://attack.mitre.org/techniques/T1040/"},
+    "data_exfil":         {"id": "T1041", "name": "Exfiltration Over C2 Channel",       "tactic": "Exfiltration",           "url": "https://attack.mitre.org/techniques/T1041/"},
+    "cloud_service":      {"id": "T1537", "name": "Transfer Data to Cloud Account",     "tactic": "Exfiltration",           "url": "https://attack.mitre.org/techniques/T1537/"},
+    "db_access":          {"id": "T1213", "name": "Data from Information Repositories", "tactic": "Collection",              "url": "https://attack.mitre.org/techniques/T1213/"},
+    "lb_discovery":       {"id": "T1595", "name": "Active Scanning",                    "tactic": "Reconnaissance",          "url": "https://attack.mitre.org/techniques/T1595/"},
+}
+
+
+def annotate_hop_techniques(
+    node: dict,
+    edge_config: dict,
+    is_first_hop: bool,
+    is_target: bool,
+) -> List[Dict[str, str]]:
+    """
+    Returns a deduplicated list of ATT&CK technique dicts relevant to
+    compromising a given hop in the attack path.
+    """
+    T = ATTACK_TECHNIQUES
+    seen: set = set()
+    results: List[Dict[str, str]] = []
+
+    def add(key: str) -> None:
+        t = T.get(key)
+        if t and t["id"] not in seen:
+            seen.add(t["id"])
+            results.append(t)
+
+    config    = node.get("config", {})
+    node_type = node.get("type", "")
+
+    # First hop / internet node → external access vector
+    if is_first_hop or node_type == "internet":
+        add("external_remote")
+
+    # Firewall traversal
+    if node_type == "firewall":
+        add("proxy_traversal")
+
+    # Load balancer → active scanning/reconnaissance
+    if node_type == "loadbalancer":
+        add("lb_discovery")
+
+    # Cloud service → exfiltration risk
+    if node_type == "cloud" and is_target:
+        add("cloud_service")
+
+    # Database → collection risk
+    if node_type == "database" and is_target:
+        add("db_access")
+
+    # Vulnerability flags
+    if config.get("has_rce_vulnerability") is True:
+        add("rce_vulnerability")
+    if config.get("has_weak_credentials") is True:
+        add("weak_credentials")
+    if config.get("is_patched") is False:
+        add("unpatched_host")
+
+    # Port exposure → service discovery
+    open_ports = config.get("open_ports", [])
+    if isinstance(open_ports, list) and len(open_ports) >= 1:
+        add("service_discovery")
+
+    # Lateral movement on non-first, non-internet hops
+    if not is_first_hop and node_type not in ("internet", "firewall"):
+        add("lateral_movement")
+
+    # Target asset → exfiltration
+    if is_target and node_type not in ("internet", "firewall", "loadbalancer"):
+        add("data_exfil")
+
+    # Edge: cleartext traffic interception
+    if edge_config.get("is_unencrypted") or edge_config.get("unencrypted"):
+        add("cleartext_sniff")
+
+    return results
+
 
 def calculate_traversal_cost(source_node: dict, target_node: dict, persona: str = 'standard') -> int:
     """
@@ -293,14 +383,56 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
 
         risk_score = min(100.0, max(0.0, risk_score))
 
+    # ── Per-hop ATT&CK technique annotation (primary path only) ──────────────
+    primary_hop_techniques: List[List[Dict[str, str]]] = []
+    primary_unique_techniques: List[Dict[str, str]] = []
+    seen_primary_ids: set = set()
+
+    target_node_id_set = set(target_node_ids)
+
+    if path:
+        for i, node_id in enumerate(path):
+            node_model = next((n for n in graph_data.nodes if n.id == node_id), None)
+            if not node_model:
+                primary_hop_techniques.append([])
+                continue
+
+            # Find the incoming edge config for this hop
+            edge_cfg: Dict[str, Any] = {}
+            if i > 0:
+                prev_id = path[i - 1]
+                edge_model = next(
+                    (e for e in graph_data.edges if
+                     (e.source == prev_id and e.target == node_id) or
+                     (e.source == node_id and e.target == prev_id)),
+                    None,
+                )
+                if edge_model:
+                    edge_cfg = edge_model.config or {}
+
+            hop_techs = annotate_hop_techniques(
+                node=node_model.dict(),
+                edge_config=edge_cfg,
+                is_first_hop=(i == 0),
+                is_target=(node_id in target_node_id_set),
+            )
+            primary_hop_techniques.append(hop_techs)
+
+            for t in hop_techs:
+                if t["id"] not in seen_primary_ids:
+                    seen_primary_ids.add(t["id"])
+                    primary_unique_techniques.append(t)
+
     # Deduplicate recommendations while preserving order
     seen: set = set()
     deduped_actions = [x for x in recommended_actions if not (x in seen or seen.add(x))]
 
     return {
-        "path":                path,
-        "paths":               paths,
-        "contributing_factors": contributing_factors,
-        "recommended_actions": deduped_actions,
-        "risk_score":          risk_score,
+        "path":                     path,
+        "paths":                    paths,
+        "contributing_factors":     contributing_factors,
+        "recommended_actions":      deduped_actions,
+        "risk_score":               risk_score,
+        "attack_path_techniques":   primary_unique_techniques,
+        "primary_hop_techniques":   primary_hop_techniques,
     }
