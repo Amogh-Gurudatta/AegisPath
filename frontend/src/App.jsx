@@ -948,7 +948,6 @@ export default function App() {
           isSidebarOpen={isSidebarOpen}
           onToggle={() => setIsSidebarOpen((v) => !v)}
           onDragStart={onDragStart}
-          activePersona={activePersona}
           error={error}
           simulationPath={primaryPath}
           nodes={nodes}

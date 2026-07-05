@@ -5,7 +5,6 @@ export default function Sidebar({
   isSidebarOpen,
   onToggle,
   onDragStart,
-  activePersona,
   error,
   simulationPath = [],
   nodes = [],
@@ -80,20 +79,6 @@ export default function Sidebar({
               <ChevronRight size={14} className="palette-chevron" />
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Active persona info */}
-      <div className="sidebar-section">
-        <h4 className="section-label">Active Persona</h4>
-        <div className="persona-card" style={{ borderColor: activePersona.color + '44' }}>
-          <div className="persona-card-icon" style={{ color: activePersona.color, background: activePersona.color + '18' }}>
-            <activePersona.icon size={16} />
-          </div>
-          <div>
-            <p className="persona-card-name" style={{ color: activePersona.color }}>{activePersona.label}</p>
-            <p className="persona-card-desc">{activePersona.description}</p>
-          </div>
         </div>
       </div>
 
