@@ -82,7 +82,7 @@ export default function OnboardingTour({ run, setRun }) {
         <StepContent
           icon="📦"
           title="Component Library"
-          body="Drag infrastructure nodes — Firewalls, Servers, and Workstations — from this palette onto the canvas to build your attack surface map."
+          body="Drag any of 7 infrastructure node types onto the canvas — Firewall, Server, Workstation, Router, Database, Load Balancer, or Cloud Service — to build your attack surface map."
         />
       ),
     },
@@ -105,8 +105,8 @@ export default function OnboardingTour({ run, setRun }) {
       content: (
         <StepContent
           icon="🔧"
-          title="Node Inspector"
-          body="Click any node to edit its IP address, CVSS score, patch status, and RCE flags — or pin it as the Attacker Entry Point or High-Value Target."
+          title="Inspector Panel"
+          body="Click a node to edit its label, IP, CVSS score, open ports, patch status, and vulnerability flags. Click an edge to toggle cleartext mode. Add or delete arbitrary custom properties. Mark multiple nodes as Attacker Entry Points or High-Value Targets."
         />
       ),
     },
@@ -118,7 +118,7 @@ export default function OnboardingTour({ run, setRun }) {
         <StepContent
           icon="⚡"
           title="Run Simulation"
-          body="Triggers the multi-path threat engine. The primary attack route is animated in red; up to two alternative lateral paths are traced in amber."
+          body="Triggers the multi-path threat engine across all entry points and targets. The primary attack path animates in red; alternatives trace in amber. Switch attacker personas (Standard / Script Kiddie / APT) in the top bar to change traversal weights before simulating."
         />
       ),
     },

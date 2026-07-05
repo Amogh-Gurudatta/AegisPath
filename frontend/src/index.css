@@ -61,6 +61,22 @@
   --node-default-color: #38bdf8;
   --node-default-border: rgba(2, 132, 199, 0.4);
 
+  --node-router-bg: rgba(13, 148, 136, 0.08);
+  --node-router-color: #2dd4bf;
+  --node-router-border: rgba(13, 148, 136, 0.45);
+
+  --node-database-bg: rgba(139, 92, 246, 0.08);
+  --node-database-color: #a78bfa;
+  --node-database-border: rgba(139, 92, 246, 0.45);
+
+  --node-loadbalancer-bg: rgba(245, 158, 11, 0.08);
+  --node-loadbalancer-color: #fbbf24;
+  --node-loadbalancer-border: rgba(245, 158, 11, 0.45);
+
+  --node-cloud-bg: rgba(6, 182, 212, 0.08);
+  --node-cloud-color: #67e8f9;
+  --node-cloud-border: rgba(6, 182, 212, 0.4);
+
   --edge-color: #2d3748;
   --logo-gradient: linear-gradient(130deg, #e2e8f0 30%, #64748b 100%);
   --minimap-mask: rgba(8, 10, 15, 0.6);
@@ -133,6 +149,22 @@
   --node-default-bg: rgba(2, 132, 199, 0.08);
   --node-default-color: #0284c7;
   --node-default-border: rgba(2, 132, 199, 0.55);
+
+  --node-router-bg: rgba(13, 148, 136, 0.08);
+  --node-router-color: #0d9488;
+  --node-router-border: rgba(13, 148, 136, 0.55);
+
+  --node-database-bg: rgba(109, 40, 217, 0.08);
+  --node-database-color: #7c3aed;
+  --node-database-border: rgba(109, 40, 217, 0.55);
+
+  --node-loadbalancer-bg: rgba(217, 119, 6, 0.08);
+  --node-loadbalancer-color: #b45309;
+  --node-loadbalancer-border: rgba(217, 119, 6, 0.55);
+
+  --node-cloud-bg: rgba(8, 145, 178, 0.08);
+  --node-cloud-color: #0891b2;
+  --node-cloud-border: rgba(8, 145, 178, 0.55);
 
   --edge-color: #94a3b8;
   --logo-gradient: linear-gradient(130deg, #0f172a 30%, #475569 100%);
@@ -570,10 +602,15 @@ h1, h2, h3, h4, h5, h6,
   flex-shrink: 0;
 }
 
-.palette-icon-firewall   { background: rgba(244, 63, 94, 0.12); color: #f43f5e; }
-.palette-icon-server     { background: rgba(99, 102, 241, 0.12); color: #818cf8; }
-.palette-icon-workstation{ background: rgba(56, 189, 248, 0.12); color: #38bdf8; }
-.palette-icon-internet   { background: rgba(100, 116, 139, 0.12); color: #94a3b8; }
+.palette-icon-firewall      { background: rgba(244, 63, 94, 0.12);  color: #f43f5e; }
+.palette-icon-server        { background: rgba(99, 102, 241, 0.12); color: #818cf8; }
+.palette-icon-workstation   { background: rgba(56, 189, 248, 0.12); color: #38bdf8; }
+.palette-icon-internet      { background: rgba(100, 116, 139, 0.12);color: #94a3b8; }
+.palette-icon-router        { background: rgba(13, 148, 136, 0.12); color: #2dd4bf; }
+.palette-icon-database      { background: rgba(139, 92, 246, 0.12); color: #a78bfa; }
+.palette-icon-loadbalancer  { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
+.palette-icon-cloud         { background: rgba(6, 182, 212, 0.12);  color: #67e8f9; }
+
 
 .palette-details h4 {
   font-size: 13px;
@@ -1130,13 +1167,22 @@ h1, h2, h3, h4, h5, h6,
 
 .react-flow__controls button {
   background: var(--bg-secondary) !important;
-  border-color: var(--border-color) !important;
+  border: 1px solid var(--border-color) !important;
+  border-bottom: none !important;
   color: var(--text-secondary) !important;
+}
+
+.react-flow__controls button:last-child {
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
 .react-flow__controls button:hover {
   background: var(--bg-elevated) !important;
   color: var(--text-primary) !important;
+}
+
+.react-flow__controls button svg {
+  fill: var(--text-primary) !important;
 }
 
 .react-flow__node {

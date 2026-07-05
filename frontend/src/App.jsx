@@ -67,6 +67,42 @@ const NODE_STYLES = {
     fontSize: '13px',
     fontWeight: 600,
   },
+  router: {
+    background: 'var(--node-router-bg)',
+    color: 'var(--node-router-color)',
+    border: '1.5px solid var(--node-router-border)',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    fontSize: '13px',
+    fontWeight: 600,
+  },
+  database: {
+    background: 'var(--node-database-bg)',
+    color: 'var(--node-database-color)',
+    border: '1.5px solid var(--node-database-border)',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    fontSize: '13px',
+    fontWeight: 600,
+  },
+  loadbalancer: {
+    background: 'var(--node-loadbalancer-bg)',
+    color: 'var(--node-loadbalancer-color)',
+    border: '1.5px solid var(--node-loadbalancer-border)',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    fontSize: '13px',
+    fontWeight: 600,
+  },
+  cloud: {
+    background: 'var(--node-cloud-bg)',
+    color: 'var(--node-cloud-color)',
+    border: '1.5px solid var(--node-cloud-border)',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    fontSize: '13px',
+    fontWeight: 600,
+  },
 };
 
 const getNodeStyle = (nodeType, isInternet = false) => {
@@ -266,6 +302,26 @@ export default function App() {
     setSelectedNode((curr) => (curr && curr.id === nodeId ? null : curr));
   }, [setNodes, setEdges, setSelectedNode]);
 
+  // Removes a single custom key from a node's config
+  const deleteNodeConfigKey = (nodeId, key) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          const { [key]: _removed, ...rest } = node.config || {};
+          return { ...node, config: rest };
+        }
+        return node;
+      })
+    );
+    setSelectedNode((prev) => {
+      if (prev && prev.id === nodeId) {
+        const { [key]: _removed, ...rest } = prev.config || {};
+        return { ...prev, config: rest };
+      }
+      return prev;
+    });
+  };
+
   const exportGraph = () => {
     const data = {
       nodes,
@@ -334,7 +390,15 @@ export default function App() {
 
       nodeCounter.current += 1;
       const newNodeId = `node-${nodeCounter.current}`;
-      const labelMap = { firewall: 'Firewall Node', server: 'Server Node', default: 'Workstation Node' };
+      const labelMap = {
+        firewall: 'Firewall Node',
+        server: 'Server Node',
+        default: 'Workstation Node',
+        router: 'Router Node',
+        database: 'Database Node',
+        loadbalancer: 'Load Balancer',
+        cloud: 'Cloud Service',
+      };
 
       const newNode = {
         id: newNodeId,
@@ -1078,6 +1142,7 @@ export default function App() {
           updateNodeConfig={updateNodeConfig}
           updateNodeLabel={updateNodeLabel}
           updateEdgeConfig={updateEdgeConfig}
+          deleteNodeConfigKey={deleteNodeConfigKey}
           onDeleteNode={handleDeleteNode}
         />
         {runTour && <OnboardingTour run={runTour} setRun={setRunTour} />}

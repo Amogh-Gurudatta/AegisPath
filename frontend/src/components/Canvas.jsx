@@ -49,8 +49,7 @@ export default function Canvas({
         fitView
         fitViewOptions={{ padding: 0.15 }}
         defaultEdgeOptions={{ type: 'smoothstep' }}
-        attributionPosition="bottom-right"
-        proOptions={{ hideAttribution: false }}
+        proOptions={{ hideAttribution: true }}
       >
         {/* Subtle dot grid backdrop */}
         <Background
@@ -75,10 +74,14 @@ export default function Canvas({
         <MiniMap
           nodeColor={(n) => {
             switch (n.nodeType) {
-              case 'firewall': return '#f43f5e';
-              case 'server': return '#818cf8';
-              case 'internet': return '#64748b';
-              default: return '#38bdf8';
+              case 'firewall':     return '#f43f5e';
+              case 'server':      return '#818cf8';
+              case 'internet':    return '#64748b';
+              case 'router':      return '#2dd4bf';
+              case 'database':    return '#a78bfa';
+              case 'loadbalancer':return '#fbbf24';
+              case 'cloud':       return '#67e8f9';
+              default:            return '#38bdf8';
             }
           }}
           maskColor="rgba(10, 11, 16, 0.75)"

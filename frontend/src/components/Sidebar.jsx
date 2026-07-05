@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Shield, Server, Laptop, ChevronRight, AlertTriangle, TrendingUp, Download, Upload, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Shield, Server, Laptop, ChevronRight, AlertTriangle, TrendingUp, Download, Upload, PanelLeftClose, PanelLeftOpen, Network, Database, GitMerge, Cloud } from 'lucide-react';
 
 export default function Sidebar({
   isSidebarOpen,
@@ -59,9 +59,13 @@ export default function Sidebar({
         <h4 className="section-label">Drag to Canvas</h4>
         <div className="node-palette-list">
           {[
-            { type: 'firewall', label: 'Firewall Guard', sub: 'Filters & controls traffic', cls: 'palette-icon-firewall', Icon: Shield },
-            { type: 'server', label: 'Enterprise Server', sub: 'Hosts services & databases', cls: 'palette-icon-server', Icon: Server },
-            { type: 'default', label: 'User Workstation', sub: 'Endpoint & lateral pivot', cls: 'palette-icon-workstation', Icon: Laptop },
+            { type: 'firewall',     label: 'Firewall Guard',   sub: 'Filters & controls traffic',   cls: 'palette-icon-firewall',     Icon: Shield    },
+            { type: 'server',       label: 'Enterprise Server', sub: 'Hosts services & databases',   cls: 'palette-icon-server',       Icon: Server    },
+            { type: 'default',      label: 'User Workstation',  sub: 'Endpoint & lateral pivot',     cls: 'palette-icon-workstation',  Icon: Laptop    },
+            { type: 'router',       label: 'Network Router',    sub: 'Routes packets between nets',  cls: 'palette-icon-router',       Icon: Network   },
+            { type: 'database',     label: 'Database Server',   sub: 'Structured data store',        cls: 'palette-icon-database',     Icon: Database  },
+            { type: 'loadbalancer', label: 'Load Balancer',     sub: 'Distributes ingress traffic',  cls: 'palette-icon-loadbalancer', Icon: GitMerge  },
+            { type: 'cloud',        label: 'Cloud Service',     sub: 'SaaS / CDN / cloud endpoint',  cls: 'palette-icon-cloud',        Icon: Cloud     },
           ].map(({ type, label, sub, cls, Icon }) => (
             <div
               key={type}
