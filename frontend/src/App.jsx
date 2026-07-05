@@ -8,15 +8,8 @@ import {
 } from 'reactflow';
 import {
   Shield,
-  Server,
-  Laptop,
   Play,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Info,
   X,
-  Cpu,
-  TrendingUp,
   AlertTriangle,
   RefreshCw,
   Activity,
@@ -24,7 +17,6 @@ import {
   User,
   Zap,
   ChevronRight,
-  Globe,
   HelpCircle,
   Sun,
   Moon,
@@ -100,7 +92,7 @@ const initialNodes = [
     position: { x: 310, y: 160 },
     style: NODE_STYLES.firewall,
     nodeType: 'firewall',
-    config: { ip_address: '10.0.0.1', allowed_ips: ['0.0.0.0'], version: 'v9.4' },
+    config: { ip_address: '10.0.0.1', allowed_ips: ['0.0.0.0/0'], version: 'v9.4' },
   },
   {
     id: 'node-3',
@@ -173,39 +165,13 @@ const PERSONAS = [
   },
 ];
 
-// --- Inspector icon helper ---
-const NodeTypeIcon = ({ nodeType, size = 18 }) => {
-  switch (nodeType) {
-    case 'firewall': return <Shield size={size} />;
-    case 'server': return <Server size={size} />;
-    case 'internet': return <Globe size={size} />;
-    default: return <Laptop size={size} />;
-  }
-};
-
-const NodeTypeClass = (nodeType) => {
-  switch (nodeType) {
-    case 'firewall': return 'palette-icon-firewall';
-    case 'server': return 'palette-icon-server';
-    case 'internet': return 'palette-icon-internet';
-    default: return 'palette-icon-workstation';
-  }
-};
-
-// Safely format any config value for display
-const formatConfigValue = (val) => {
-  if (val === null || val === undefined) return '—';
-  if (typeof val === 'boolean') return val ? 'Yes' : 'No';
-  if (Array.isArray(val)) return val.join(', ') || '—';
-  if (typeof val === 'object') return JSON.stringify(val);
-  return String(val);
-};
 
 // --- Main component ---
 export default function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [selectedEdge, setSelectedEdge] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
   const [simulationPaths, setSimulationPaths] = useState([]);
@@ -245,27 +211,50 @@ export default function App() {
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === nodeId) {
-          return {
-            ...node,
-            config: {
-              ...node.config,
-              ...newConfig,
-            },
-          };
+          return { ...node, config: { ...node.config, ...newConfig } };
         }
         return node;
       })
     );
-
     setSelectedNode((prev) => {
       if (prev && prev.id === nodeId) {
-        return {
-          ...prev,
-          config: {
-            ...prev.config,
-            ...newConfig,
-          },
-        };
+        return { ...prev, config: { ...prev.config, ...newConfig } };
+      }
+      return prev;
+    });
+  };
+
+  // Updates the visible label stored in node.data.label
+  const updateNodeLabel = (nodeId, newLabel) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          return { ...node, data: { ...node.data, label: newLabel } };
+        }
+        return node;
+      })
+    );
+    setSelectedNode((prev) => {
+      if (prev && prev.id === nodeId) {
+        return { ...prev, data: { ...prev.data, label: newLabel } };
+      }
+      return prev;
+    });
+  };
+
+  // Updates config on an edge (e.g. is_unencrypted)
+  const updateEdgeConfig = (edgeId, newConfig) => {
+    setEdges((eds) =>
+      eds.map((edge) => {
+        if (edge.id === edgeId) {
+          return { ...edge, config: { ...(edge.config || {}), ...newConfig } };
+        }
+        return edge;
+      })
+    );
+    setSelectedEdge((prev) => {
+      if (prev && prev.id === edgeId) {
+        return { ...prev, config: { ...(prev.config || {}), ...newConfig } };
       }
       return prev;
     });
@@ -299,10 +288,14 @@ export default function App() {
       if (parsed && Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
         setNodes(parsed.nodes);
         setEdges(parsed.edges);
-        setSimulationPath([]);
+        setSimulationPaths([]);
         setContributingFactors([]);
+        setSimulationReport([]);
+        setRemediationPlan([]);
         setRiskScore(0);
         setShowReport(false);
+        setSimulationStatus('idle');
+        setSelectedNode(null);
         setError(null);
       } else {
         setError('Invalid topology JSON structure.');
@@ -380,14 +373,22 @@ export default function App() {
     [setEdges]
   );
 
-  // --- Node selection ---
+  // --- Node / Edge selection ---
   const onNodeClick = useCallback((event, node) => {
     setSelectedNode(node);
+    setSelectedEdge(null);
+    if (!isInspectorOpen) setIsInspectorOpen(true);
+  }, [isInspectorOpen]);
+
+  const onEdgeClick = useCallback((event, edge) => {
+    setSelectedEdge(edge);
+    setSelectedNode(null);
     if (!isInspectorOpen) setIsInspectorOpen(true);
   }, [isInspectorOpen]);
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
+    setSelectedEdge(null);
   }, []);
 
   // --- Animation helpers ---
@@ -649,8 +650,9 @@ export default function App() {
       const container = document.querySelector('.canvas-container');
       if (!container) return;
 
+      const activeBgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim() || '#080a0f';
       const canvas = await html2canvas(container, {
-        backgroundColor: '#080a0f',
+        backgroundColor: activeBgColor,
         logging: false,
         useCORS: true,
       });
@@ -701,13 +703,13 @@ export default function App() {
 
       // 1. Contributing Factors
       checkPageBreak(35);
-      pdf.setTextColor(244, 63, 94);
+      pdf.setTextColor(225, 29, 72); // High-contrast crimson
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(12);
       pdf.text('Contributing Risk Factors', margin, cursorY);
       cursorY += 8;
 
-      pdf.setTextColor(226, 232, 240);
+      pdf.setTextColor(30, 41, 59); // Dark slate for excellent readability on white
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(10);
 
@@ -729,13 +731,13 @@ export default function App() {
 
       // 2. Recommended Mitigations
       checkPageBreak(35);
-      pdf.setTextColor(16, 185, 129);
+      pdf.setTextColor(5, 150, 105); // High-contrast emerald green
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(12);
       pdf.text('Recommended Mitigations', margin, cursorY);
       cursorY += 8;
 
-      pdf.setTextColor(226, 232, 240);
+      pdf.setTextColor(30, 41, 59); // Dark slate for excellent readability on white
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(10);
 
@@ -970,6 +972,7 @@ export default function App() {
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               onNodeClick={onNodeClick}
+              onEdgeClick={onEdgeClick}
               onPaneClick={onPaneClick}
               onInit={setReactFlowInstance}
             />
@@ -1069,10 +1072,13 @@ export default function App() {
         {/* Inspector panel */}
         <Inspector
           selectedNode={selectedNode}
+          selectedEdge={selectedEdge}
           isInspectorOpen={isInspectorOpen}
           setIsInspectorOpen={setIsInspectorOpen}
           simulationPath={primaryPath}
           updateNodeConfig={updateNodeConfig}
+          updateNodeLabel={updateNodeLabel}
+          updateEdgeConfig={updateEdgeConfig}
           onDeleteNode={handleDeleteNode}
         />
         {runTour && <OnboardingTour run={runTour} setRun={setRunTour} />}
