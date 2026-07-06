@@ -2,6 +2,15 @@
 
 > FastAPI REST API powering the AegisPath threat simulation engine.
 
+[![Live API](https://img.shields.io/badge/API-live%20on%20Railway-violet.svg)](https://aegispath-production.up.railway.app)
+[![Swagger](https://img.shields.io/badge/docs-Swagger%20UI-blue.svg)](https://aegispath-production.up.railway.app/docs)
+
+| Endpoint         | URL                                                           |
+| ---------------- | ------------------------------------------------------------- |
+| **Base URL**     | `https://aegispath-production.up.railway.app`                 |
+| **Health check** | [/health](https://aegispath-production.up.railway.app/health) |
+| **Swagger UI**   | [/docs](https://aegispath-production.up.railway.app/docs)     |
+
 ---
 
 ## Overview
@@ -172,25 +181,25 @@ Accepts a `NetworkGraph` payload and returns a `SimulationResponse`.
 
 ## Attacker Persona Cost Model
 
-| Condition                  | Standard | Script Kiddie | APT    |
-| -------------------------- | -------- | ------------- | ------ |
+| Condition                  | Standard | Script Kiddie | APT         |
+| -------------------------- | -------- | ------------- | ----------- |
 | Firewall (not whitelisted) | 9999     | 10499 (+500)  | 10049 (+50) |
-| Firewall (whitelisted)     | 10       | 510           | 60     |
-| RCE vulnerability present  | No bonus | **−99**       | No bonus |
-| Weak credentials present   | No bonus | No bonus      | **−80** |
+| Firewall (whitelisted)     | 10       | 510           | 60          |
+| RCE vulnerability present  | No bonus | **−99**       | No bonus    |
+| Weak credentials present   | No bonus | No bonus      | **−80**     |
 
 ---
 
 ## Risk Score Reference
 
-| Event | Points Added |
-|-------|--------------|
-| Firewall node traversed | +10 |
-| Server / workstation traversed | +20 |
-| CVSS score present | +(cvss × 5) |
-| RCE vulnerability | +30 |
-| Weak credentials | +15 |
-| Unpatched node (`is_patched: false`) | +10 |
-| Cleartext link (`unencrypted: true`) | +15 |
+| Event                                | Points Added |
+| ------------------------------------ | ------------ |
+| Firewall node traversed              | +10          |
+| Server / workstation traversed       | +20          |
+| CVSS score present                   | +(cvss × 5)  |
+| RCE vulnerability                    | +30          |
+| Weak credentials                     | +15          |
+| Unpatched node (`is_patched: false`) | +10          |
+| Cleartext link (`unencrypted: true`) | +15          |
 
 Final score is **clamped to 0–100**.

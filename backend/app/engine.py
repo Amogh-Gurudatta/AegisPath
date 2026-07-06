@@ -7,18 +7,78 @@ from app.schemas import NetworkGraph
 # Maps node/edge flags to ATT&CK technique metadata.
 # Source: https://attack.mitre.org/
 ATTACK_TECHNIQUES: Dict[str, Dict[str, str]] = {
-    "external_remote":    {"id": "T1133", "name": "External Remote Services",           "tactic": "Initial Access",          "url": "https://attack.mitre.org/techniques/T1133/"},
-    "rce_vulnerability":  {"id": "T1190", "name": "Exploit Public-Facing Application",  "tactic": "Initial Access",          "url": "https://attack.mitre.org/techniques/T1190/"},
-    "weak_credentials":   {"id": "T1078", "name": "Valid Accounts",                      "tactic": "Defense Evasion",          "url": "https://attack.mitre.org/techniques/T1078/"},
-    "unpatched_host":     {"id": "T1203", "name": "Exploitation for Client Execution",  "tactic": "Execution",              "url": "https://attack.mitre.org/techniques/T1203/"},
-    "service_discovery":  {"id": "T1046", "name": "Network Service Scanning",           "tactic": "Discovery",              "url": "https://attack.mitre.org/techniques/T1046/"},
-    "lateral_movement":   {"id": "T1021", "name": "Remote Services",                    "tactic": "Lateral Movement",        "url": "https://attack.mitre.org/techniques/T1021/"},
-    "proxy_traversal":    {"id": "T1090", "name": "Proxy",                              "tactic": "Command and Control",     "url": "https://attack.mitre.org/techniques/T1090/"},
-    "cleartext_sniff":    {"id": "T1040", "name": "Network Sniffing",                   "tactic": "Credential Access",       "url": "https://attack.mitre.org/techniques/T1040/"},
-    "data_exfil":         {"id": "T1041", "name": "Exfiltration Over C2 Channel",       "tactic": "Exfiltration",           "url": "https://attack.mitre.org/techniques/T1041/"},
-    "cloud_service":      {"id": "T1537", "name": "Transfer Data to Cloud Account",     "tactic": "Exfiltration",           "url": "https://attack.mitre.org/techniques/T1537/"},
-    "db_access":          {"id": "T1213", "name": "Data from Information Repositories", "tactic": "Collection",              "url": "https://attack.mitre.org/techniques/T1213/"},
-    "lb_discovery":       {"id": "T1595", "name": "Active Scanning",                    "tactic": "Reconnaissance",          "url": "https://attack.mitre.org/techniques/T1595/"},
+    "external_remote": {
+        "id": "T1133",
+        "name": "External Remote Services",
+        "tactic": "Initial Access",
+        "url": "https://attack.mitre.org/techniques/T1133/",
+    },
+    "rce_vulnerability": {
+        "id": "T1190",
+        "name": "Exploit Public-Facing Application",
+        "tactic": "Initial Access",
+        "url": "https://attack.mitre.org/techniques/T1190/",
+    },
+    "weak_credentials": {
+        "id": "T1078",
+        "name": "Valid Accounts",
+        "tactic": "Defense Evasion",
+        "url": "https://attack.mitre.org/techniques/T1078/",
+    },
+    "unpatched_host": {
+        "id": "T1203",
+        "name": "Exploitation for Client Execution",
+        "tactic": "Execution",
+        "url": "https://attack.mitre.org/techniques/T1203/",
+    },
+    "service_discovery": {
+        "id": "T1046",
+        "name": "Network Service Scanning",
+        "tactic": "Discovery",
+        "url": "https://attack.mitre.org/techniques/T1046/",
+    },
+    "lateral_movement": {
+        "id": "T1021",
+        "name": "Remote Services",
+        "tactic": "Lateral Movement",
+        "url": "https://attack.mitre.org/techniques/T1021/",
+    },
+    "proxy_traversal": {
+        "id": "T1090",
+        "name": "Proxy",
+        "tactic": "Command and Control",
+        "url": "https://attack.mitre.org/techniques/T1090/",
+    },
+    "cleartext_sniff": {
+        "id": "T1040",
+        "name": "Network Sniffing",
+        "tactic": "Credential Access",
+        "url": "https://attack.mitre.org/techniques/T1040/",
+    },
+    "data_exfil": {
+        "id": "T1041",
+        "name": "Exfiltration Over C2 Channel",
+        "tactic": "Exfiltration",
+        "url": "https://attack.mitre.org/techniques/T1041/",
+    },
+    "cloud_service": {
+        "id": "T1537",
+        "name": "Transfer Data to Cloud Account",
+        "tactic": "Exfiltration",
+        "url": "https://attack.mitre.org/techniques/T1537/",
+    },
+    "db_access": {
+        "id": "T1213",
+        "name": "Data from Information Repositories",
+        "tactic": "Collection",
+        "url": "https://attack.mitre.org/techniques/T1213/",
+    },
+    "lb_discovery": {
+        "id": "T1595",
+        "name": "Active Scanning",
+        "tactic": "Reconnaissance",
+        "url": "https://attack.mitre.org/techniques/T1595/",
+    },
 }
 
 
@@ -42,7 +102,7 @@ def annotate_hop_techniques(
             seen.add(t["id"])
             results.append(t)
 
-    config    = node.get("config", {})
+    config = node.get("config", {})
     node_type = node.get("type", "")
 
     # First hop / internet node → external access vector
@@ -93,35 +153,37 @@ def annotate_hop_techniques(
     return results
 
 
-def calculate_traversal_cost(source_node: dict, target_node: dict, persona: str = 'standard') -> int:
+def calculate_traversal_cost(
+    source_node: dict, target_node: dict, persona: str = "standard"
+) -> int:
     """
     Calculates the traversal cost (edge weight) to reach a target node from a source node
     based on stateful network routing, firewall configurations, vulnerability scores,
     and the attacker persona.
     """
-    src_config = source_node.get('config', {})
-    tgt_config = target_node.get('config', {})
+    src_config = source_node.get("config", {})
+    tgt_config = target_node.get("config", {})
 
     # Firewall Logic
-    if target_node.get('type') == 'firewall':
-        src_ip = src_config.get('ip_address')
-        allowed_ips = tgt_config.get('allowed_ips', [])
+    if target_node.get("type") == "firewall":
+        src_ip = src_config.get("ip_address")
+        allowed_ips = tgt_config.get("allowed_ips", [])
 
         # Ensure allowed_ips is treated as a list
         if not isinstance(allowed_ips, list):
             allowed_ips = [allowed_ips]
 
         # IP-based ACL
-        ip_allowed = (src_ip and src_ip in allowed_ips) or '0.0.0.0/0' in allowed_ips
+        ip_allowed = (src_ip and src_ip in allowed_ips) or "0.0.0.0/0" in allowed_ips
         cost = 10 if ip_allowed else 9999
 
         # Port-based ACL: if the firewall restricts to specific ports,
         # check whether the source exposes any matching port
-        fw_open_ports = tgt_config.get('open_ports', [])
+        fw_open_ports = tgt_config.get("open_ports", [])
         if fw_open_ports and ip_allowed:
             if not isinstance(fw_open_ports, list):
                 fw_open_ports = [fw_open_ports] if fw_open_ports is not None else []
-            src_ports = src_config.get('open_ports', [])
+            src_ports = src_config.get("open_ports", [])
             if not isinstance(src_ports, list):
                 src_ports = [src_ports] if src_ports is not None else []
             # No matching port → significantly raise traversal cost
@@ -129,21 +191,21 @@ def calculate_traversal_cost(source_node: dict, target_node: dict, persona: str 
                 cost += 4000
 
         # Persona adjustments for Firewall
-        if persona == 'script_kiddie':
+        if persona == "script_kiddie":
             cost += 500
-        elif persona == 'apt':
+        elif persona == "apt":
             cost += 50
 
     # Server / Workstation Logic
     else:
         cost = 100
-        cvss_score = tgt_config.get('cvss_score')
+        cvss_score = tgt_config.get("cvss_score")
         if cvss_score is not None:
-            cost -= (float(cvss_score) * 8)
+            cost -= float(cvss_score) * 8
 
-        if src_config.get('is_compromised') is True:
-            src_ports = src_config.get('open_ports', [])
-            tgt_ports = tgt_config.get('open_ports', [])
+        if src_config.get("is_compromised") is True:
+            src_ports = src_config.get("open_ports", [])
+            tgt_ports = tgt_config.get("open_ports", [])
 
             if not isinstance(src_ports, list):
                 src_ports = [src_ports] if src_ports is not None else []
@@ -155,11 +217,11 @@ def calculate_traversal_cost(source_node: dict, target_node: dict, persona: str 
                 cost -= 20
 
         # Persona adjustments for Endpoints
-        if persona == 'script_kiddie':
-            if tgt_config.get('has_rce_vulnerability') is True:
+        if persona == "script_kiddie":
+            if tgt_config.get("has_rce_vulnerability") is True:
                 cost -= 99
-        elif persona == 'apt':
-            if tgt_config.get('has_weak_credentials') is True:
+        elif persona == "apt":
+            if tgt_config.get("has_weak_credentials") is True:
                 cost -= 80
 
     return max(1, int(cost))
@@ -182,7 +244,7 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
         }
 
     di_graph = nx.DiGraph()
-    persona = getattr(graph_data, 'persona', 'standard') or 'standard'
+    persona = getattr(graph_data, "persona", "standard") or "standard"
 
     # Add nodes
     for node in graph_data.nodes:
@@ -190,32 +252,42 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
 
     # Add bidirectional edges with dynamic stateful weights
     for edge in graph_data.edges:
-        source_node_model = next((n for n in graph_data.nodes if n.id == edge.source), None)
-        target_node_model = next((n for n in graph_data.nodes if n.id == edge.target), None)
+        source_node_model = next(
+            (n for n in graph_data.nodes if n.id == edge.source), None
+        )
+        target_node_model = next(
+            (n for n in graph_data.nodes if n.id == edge.target), None
+        )
 
         if source_node_model and target_node_model:
             source_dict = source_node_model.dict()
             target_dict = target_node_model.dict()
 
-            weight_forward  = calculate_traversal_cost(source_dict, target_dict, persona)
-            weight_backward = calculate_traversal_cost(target_dict, source_dict, persona)
+            weight_forward = calculate_traversal_cost(source_dict, target_dict, persona)
+            weight_backward = calculate_traversal_cost(
+                target_dict, source_dict, persona
+            )
             di_graph.add_edge(edge.source, edge.target, weight=weight_forward)
             di_graph.add_edge(edge.target, edge.source, weight=weight_backward)
 
     # ── Resolve ALL attacker entry points ──────────────────────────────────────
-    attacker_node_ids = [n.id for n in graph_data.nodes if n.config.get('is_attacker_entry') is True]
+    attacker_node_ids = [
+        n.id for n in graph_data.nodes if n.config.get("is_attacker_entry") is True
+    ]
     if not attacker_node_ids:
         attacker_node_ids = [graph_data.nodes[0].id]
 
     # ── Resolve ALL high-value targets ─────────────────────────────────────────
-    target_node_ids = [n.id for n in graph_data.nodes if n.config.get('is_target_asset') is True]
+    target_node_ids = [
+        n.id for n in graph_data.nodes if n.config.get("is_target_asset") is True
+    ]
     if not target_node_ids:
         target_node_ids = [graph_data.nodes[-1].id]
 
     # ── Compute paths for every entry→target pair ──────────────────────────────
     def path_weight(path):
         return sum(
-            di_graph[path[i]][path[i + 1]].get('weight', 0)
+            di_graph[path[i]][path[i + 1]].get("weight", 0)
             for i in range(len(path) - 1)
             if di_graph.has_edge(path[i], path[i + 1])
         )
@@ -226,7 +298,9 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
             if src_id == tgt_id:
                 continue
             try:
-                gen = nx.shortest_simple_paths(di_graph, source=src_id, target=tgt_id, weight='weight')
+                gen = nx.shortest_simple_paths(
+                    di_graph, source=src_id, target=tgt_id, weight="weight"
+                )
                 found = list(itertools.islice(gen, 3))
                 all_raw_paths.extend(found)
             except (nx.NetworkXNoPath, nx.NodeNotFound, nx.NetworkXError):
@@ -254,9 +328,9 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
     node_label_map = {n.id: (n.label or n.id) for n in graph_data.nodes}
 
     PERSONA_LABELS = {
-        'standard':     'Standard',
-        'script_kiddie': 'Script Kiddie',
-        'apt':           'APT Threat Group',
+        "standard": "Standard",
+        "script_kiddie": "Script Kiddie",
+        "apt": "APT Threat Group",
     }
     contributing_factors.append(
         f"Simulated under attacker persona: {PERSONA_LABELS.get(persona, persona)}."
@@ -272,10 +346,10 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
 
     REMEDIATION_MAP = {
         "has_rce_vulnerability": "Apply critical vendor security patches for node {node_label}.",
-        "has_weak_credentials":  "Enforce MFA and strict password complexity on {node_label}.",
-        "is_patched_false":      "Apply critical vendor security patches for node {node_label}.",
-        "firewall":              "Review ACL rules on {node_label}; enforce Zero Trust least-privilege.",
-        "port_exposure":         "Restrict exposed ports on {node_label} to minimum required services.",
+        "has_weak_credentials": "Enforce MFA and strict password complexity on {node_label}.",
+        "is_patched_false": "Apply critical vendor security patches for node {node_label}.",
+        "firewall": "Review ACL rules on {node_label}; enforce Zero Trust least-privilege.",
+        "port_exposure": "Restrict exposed ports on {node_label} to minimum required services.",
     }
 
     recommended_actions = []
@@ -286,15 +360,15 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
             if not node_model:
                 continue
 
-            config     = node_model.config or {}
+            config = node_model.config or {}
             node_label = node_model.label or node_id
 
-            if node_model.type == 'firewall':
+            if node_model.type == "firewall":
                 risk_score += 10.0
-                allowed_ips  = config.get('allowed_ips', [])
-                fw_ports     = config.get('open_ports', [])
+                allowed_ips = config.get("allowed_ips", [])
+                fw_ports = config.get("open_ports", [])
 
-                if '0.0.0.0/0' in allowed_ips:
+                if "0.0.0.0/0" in allowed_ips:
                     contributing_factors.append(
                         f"Firewall '{node_label}' permitted pivot traffic (wildcard IP ACL enabled)."
                     )
@@ -311,11 +385,13 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
                         REMEDIATION_MAP["port_exposure"].format(node_label=node_label)
                     )
 
-                recommended_actions.append(REMEDIATION_MAP["firewall"].format(node_label=node_label))
+                recommended_actions.append(
+                    REMEDIATION_MAP["firewall"].format(node_label=node_label)
+                )
 
             else:
                 risk_score += 20.0
-                cvss = config.get('cvss_score')
+                cvss = config.get("cvss_score")
                 if cvss is not None:
                     cvss_val = float(cvss)
                     risk_score += cvss_val * 5.0
@@ -328,29 +404,41 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
                             f"Vulnerability with CVSS score {cvss_val} present on host '{node_label}'."
                         )
 
-                if config.get('has_rce_vulnerability') is True:
+                if config.get("has_rce_vulnerability") is True:
                     risk_score += 30.0
-                    contributing_factors.append(f"Critical RCE exploited on '{node_label}'.")
+                    contributing_factors.append(
+                        f"Critical RCE exploited on '{node_label}'."
+                    )
                     recommended_actions.append(
-                        REMEDIATION_MAP["has_rce_vulnerability"].format(node_label=node_label)
+                        REMEDIATION_MAP["has_rce_vulnerability"].format(
+                            node_label=node_label
+                        )
                     )
 
-                if config.get('has_weak_credentials') is True:
+                if config.get("has_weak_credentials") is True:
                     risk_score += 15.0
-                    contributing_factors.append(f"Brute-forced weak credentials on '{node_label}'.")
+                    contributing_factors.append(
+                        f"Brute-forced weak credentials on '{node_label}'."
+                    )
                     recommended_actions.append(
-                        REMEDIATION_MAP["has_weak_credentials"].format(node_label=node_label)
+                        REMEDIATION_MAP["has_weak_credentials"].format(
+                            node_label=node_label
+                        )
                     )
 
-                if config.get('is_patched') is False:
+                if config.get("is_patched") is False:
                     risk_score += 10.0
-                    contributing_factors.append(f"Missing security patches on host '{node_label}'.")
+                    contributing_factors.append(
+                        f"Missing security patches on host '{node_label}'."
+                    )
                     recommended_actions.append(
-                        REMEDIATION_MAP["is_patched_false"].format(node_label=node_label)
+                        REMEDIATION_MAP["is_patched_false"].format(
+                            node_label=node_label
+                        )
                     )
 
                 # Port-based exposure analysis
-                node_ports = config.get('open_ports', [])
+                node_ports = config.get("open_ports", [])
                 if isinstance(node_ports, list) and len(node_ports) > 3:
                     risk_score += 5.0
                     contributing_factors.append(
@@ -363,16 +451,22 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
             # Inspect edge between hop i-1 and hop i
             if i > 0:
                 prev_node_id = path[i - 1]
-                prev_label   = node_label_map.get(prev_node_id, prev_node_id)
-                edge_model   = next(
-                    (e for e in graph_data.edges if
-                     (e.source == prev_node_id and e.target == node_id) or
-                     (e.source == node_id and e.target == prev_node_id)),
+                prev_label = node_label_map.get(prev_node_id, prev_node_id)
+                edge_model = next(
+                    (
+                        e
+                        for e in graph_data.edges
+                        if (e.source == prev_node_id and e.target == node_id)
+                        or (e.source == node_id and e.target == prev_node_id)
+                    ),
                     None,
                 )
                 if edge_model:
                     edge_config = edge_model.config or {}
-                    if edge_config.get('unencrypted') is True or edge_config.get('is_unencrypted') is True:
+                    if (
+                        edge_config.get("unencrypted") is True
+                        or edge_config.get("is_unencrypted") is True
+                    ):
                         risk_score += 15.0
                         contributing_factors.append(
                             f"Cleartext traffic intercepted on link '{prev_label}' → '{node_label}'."
@@ -402,9 +496,12 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
             if i > 0:
                 prev_id = path[i - 1]
                 edge_model = next(
-                    (e for e in graph_data.edges if
-                     (e.source == prev_id and e.target == node_id) or
-                     (e.source == node_id and e.target == prev_id)),
+                    (
+                        e
+                        for e in graph_data.edges
+                        if (e.source == prev_id and e.target == node_id)
+                        or (e.source == node_id and e.target == prev_id)
+                    ),
                     None,
                 )
                 if edge_model:
@@ -428,11 +525,11 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
     deduped_actions = [x for x in recommended_actions if not (x in seen or seen.add(x))]
 
     return {
-        "path":                     path,
-        "paths":                    paths,
-        "contributing_factors":     contributing_factors,
-        "recommended_actions":      deduped_actions,
-        "risk_score":               risk_score,
-        "attack_path_techniques":   primary_unique_techniques,
-        "primary_hop_techniques":   primary_hop_techniques,
+        "path": path,
+        "paths": paths,
+        "contributing_factors": contributing_factors,
+        "recommended_actions": deduped_actions,
+        "risk_score": risk_score,
+        "attack_path_techniques": primary_unique_techniques,
+        "primary_hop_techniques": primary_hop_techniques,
     }

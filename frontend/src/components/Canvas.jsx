@@ -1,11 +1,11 @@
-import React from 'react';
+import React from "react";
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
   BackgroundVariant,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+} from "reactflow";
+import "reactflow/dist/style.css";
 
 /**
  * Canvas Component
@@ -35,7 +35,7 @@ export default function Canvas({
   onInit,
 }) {
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: "100%", height: "100%" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -48,7 +48,7 @@ export default function Canvas({
         onInit={onInit}
         fitView
         fitViewOptions={{ padding: 0.15 }}
-        defaultEdgeOptions={{ type: 'smoothstep' }}
+        defaultEdgeOptions={{ type: "smoothstep" }}
         proOptions={{ hideAttribution: true }}
       >
         {/* Subtle dot grid backdrop */}
@@ -63,10 +63,10 @@ export default function Canvas({
         <Controls
           showInteractive={false}
           style={{
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--border-color)",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
           }}
         />
 
@@ -74,21 +74,29 @@ export default function Canvas({
         <MiniMap
           nodeColor={(n) => {
             switch (n.nodeType) {
-              case 'firewall':     return '#f43f5e';
-              case 'server':      return '#818cf8';
-              case 'internet':    return '#64748b';
-              case 'router':      return '#2dd4bf';
-              case 'database':    return '#a78bfa';
-              case 'loadbalancer':return '#fbbf24';
-              case 'cloud':       return '#67e8f9';
-              default:            return '#38bdf8';
+              case "firewall":
+                return "#f43f5e";
+              case "server":
+                return "#818cf8";
+              case "internet":
+                return "#64748b";
+              case "router":
+                return "#2dd4bf";
+              case "database":
+                return "#a78bfa";
+              case "loadbalancer":
+                return "#fbbf24";
+              case "cloud":
+                return "#67e8f9";
+              default:
+                return "#38bdf8";
             }
           }}
           maskColor="rgba(10, 11, 16, 0.75)"
           style={{
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '8px',
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--border-color)",
+            borderRadius: "8px",
           }}
         />
       </ReactFlow>

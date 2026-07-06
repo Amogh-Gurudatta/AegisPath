@@ -5,6 +5,18 @@
 [![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20NetworkX-blue.svg)](https://github.com/Amogh-Gurudatta/AegisPath/tree/main/backend)
 [![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-purple.svg)](https://github.com/Amogh-Gurudatta/AegisPath/tree/main/frontend)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](https://github.com/Amogh-Gurudatta/AegisPath/blob/main/LICENSE)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://aegis-path-phi.vercel.app/)
+[![API](https://img.shields.io/badge/API-Railway-violet.svg)](https://aegispath-production.up.railway.app/docs)
+
+---
+
+## 🚀 Live Demo
+
+| Service          | URL                                                                                                  |
+| ---------------- | ---------------------------------------------------------------------------------------------------- |
+| **Frontend**     | [https://aegis-path-phi.vercel.app/](https://aegis-path-phi.vercel.app/)                             |
+| **Backend API**  | [https://aegispath-production.up.railway.app](https://aegispath-production.up.railway.app)           |
+| **Swagger Docs** | [https://aegispath-production.up.railway.app/docs](https://aegispath-production.up.railway.app/docs) |
 
 ---
 
@@ -35,8 +47,8 @@ Most security teams model threats on whiteboards or in spreadsheets — static, 
 - **Visualise blast radius before an incident.** See exactly which path an attacker would take through your real topology, not a hypothetical one.
 - **Persona-aware routing changes the answer.** A Script Kiddie and an APT actor take measurably different paths through the same network — AegisPath shows you both.
 - **Risk is scored, not guessed.** Every node's CVSS score, patch state, and credential hygiene feeds directly into a 0–100 risk score with full factor attribution.
-- **MITRE ATT&CK mapped natively.** Understand *how* an attacker moves. The engine automatically tags compromised hops with standard T-codes (e.g. T1190, T1021).
-- **Remediations are specific, not generic.** Instead of "apply patches," the engine tells you *which nodes* are unpatched, *which ones* have exploitable credentials, and *which links* are cleartext — so engineers fix the right things first.
+- **MITRE ATT&CK mapped natively.** Understand _how_ an attacker moves. The engine automatically tags compromised hops with standard T-codes (e.g. T1190, T1021).
+- **Remediations are specific, not generic.** Instead of "apply patches," the engine tells you _which nodes_ are unpatched, _which ones_ have exploitable credentials, and _which links_ are cleartext — so engineers fix the right things first.
 - **It runs entirely locally.** No data leaves your machine (except voluntary CVE lookups). The simulation engine, pathfinder, and report generator are all self-hosted.
 
 ---
@@ -72,6 +84,8 @@ AegisPath/
 
 You need **Python 3.10+** and **Node.js 18+**.
 
+> **Want to skip setup?** The app is live at [https://aegis-path-phi.vercel.app/](https://aegis-path-phi.vercel.app/) — no installation needed.
+
 ### 1. Backend
 
 ```bash
@@ -99,16 +113,16 @@ Dashboard available at `http://localhost:5173`
 
 Both backend and frontend support configuration via `.env` files:
 
-*   **Backend (`backend/.env`):**
-    ```env
-    PORT=8000
-    HOST=127.0.0.1
-    CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-    ```
-*   **Frontend (`frontend/.env`):**
-    ```env
-    VITE_API_URL=http://127.0.0.1:8000
-    ```
+- **Backend (`backend/.env`):**
+  ```env
+  PORT=8000
+  HOST=127.0.0.1
+  CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+  ```
+- **Frontend (`frontend/.env`):**
+  ```env
+  VITE_API_URL=http://127.0.0.1:8000
+  ```
 
 ---
 
@@ -118,15 +132,15 @@ Both backend and frontend support configuration via `.env` files:
 
 The **Component Library** on the left panel contains three draggable node types:
 
-| Node | Icon | Role |
-|------|------|------|
-| **Firewall Guard** | 🛡️ | Filters and controls traffic between network segments |
-| **Enterprise Server** | 🖥️ | Hosts services, databases, and internal applications |
-| **User Workstation** | 💻 | Endpoints used for lateral movement pivots |
-| **Network Router** | 🖧 | Core networking infrastructure |
-| **Database** | 🗄️ | Data storage containing high-value assets |
-| **Load Balancer** | ⚖️ | Distributes incoming traffic |
-| **Cloud Service** | ☁️ | External or internal cloud-hosted resources |
+| Node                  | Icon | Role                                                  |
+| --------------------- | ---- | ----------------------------------------------------- |
+| **Firewall Guard**    | 🛡️   | Filters and controls traffic between network segments |
+| **Enterprise Server** | 🖥️   | Hosts services, databases, and internal applications  |
+| **User Workstation**  | 💻   | Endpoints used for lateral movement pivots            |
+| **Network Router**    | 🖧    | Core networking infrastructure                        |
+| **Database**          | 🗄️   | Data storage containing high-value assets             |
+| **Load Balancer**     | ⚖️   | Distributes incoming traffic                          |
+| **Cloud Service**     | ☁️   | External or internal cloud-hosted resources           |
 
 Drag any node onto the canvas. Click the collapse `◧` icon in the library header to hide the panel and gain more canvas space — a floating tab appears on the left edge to reopen it.
 
@@ -144,18 +158,18 @@ Hover over any node until the **connection handle** appears on its edge. Drag to
 
 Click any node to open the **Node Inspector** on the right. Configurable fields:
 
-| Property | Effect on simulation |
-|----------|----------------------|
-| **IP Address** | Used for IP-whitelist bypass checks on firewalls |
-| **CVE ID** | Paste a CVE to auto-fetch details from NIST NVD |
-| **CVSS Score** (0–10) | Higher = lower traversal cost = more attractive to attacker |
-| **Has RCE Vulnerability** | Grants −99 cost discount for Script Kiddie persona |
-| **Has Weak Credentials** | Grants −80 cost discount for APT persona |
-| **Is Patched** | `false` raises risk score +10 and generates a remediation |
-| **Open Ports** | Shared ports between adjacent compromised nodes lower traversal cost |
-| **MITRE ATT&CK Tags** | Manually attach T-codes (e.g. T1078.003) to the node |
-| **Firewall Enabled** | Adds 9999 base cost unless source IP is whitelisted |
-| **Whitelisted IPs** | Source IPs that bypass firewall cost (wildcard: `0.0.0.0/0`) |
+| Property                  | Effect on simulation                                                 |
+| ------------------------- | -------------------------------------------------------------------- |
+| **IP Address**            | Used for IP-whitelist bypass checks on firewalls                     |
+| **CVE ID**                | Paste a CVE to auto-fetch details from NIST NVD                      |
+| **CVSS Score** (0–10)     | Higher = lower traversal cost = more attractive to attacker          |
+| **Has RCE Vulnerability** | Grants −99 cost discount for Script Kiddie persona                   |
+| **Has Weak Credentials**  | Grants −80 cost discount for APT persona                             |
+| **Is Patched**            | `false` raises risk score +10 and generates a remediation            |
+| **Open Ports**            | Shared ports between adjacent compromised nodes lower traversal cost |
+| **MITRE ATT&CK Tags**     | Manually attach T-codes (e.g. T1078.003) to the node                 |
+| **Firewall Enabled**      | Adds 9999 base cost unless source IP is whitelisted                  |
+| **Whitelisted IPs**       | Source IPs that bypass firewall cost (wildcard: `0.0.0.0/0`)         |
 
 Use **📍 Set as Attacker Entry** and **🎯 Set as Target** to pin the simulation endpoints.
 
@@ -165,11 +179,11 @@ Use **📍 Set as Attacker Entry** and **🎯 Set as Target** to pin the simulat
 
 Click the **Attacker Persona** dropdown in the top header (custom themed, not a native select):
 
-| Persona | Behaviour |
-|---------|-----------|
-| **Standard Attacker** | Baseline cost model, no bonuses or penalties |
-| **Script Kiddie** | Avoids firewalls (+500 extra penalty), aggressively exploits RCE (−99 discount) |
-| **APT Threat Group** | Treats firewalls as minor obstacles (+50), crushes weak credentials (−80) |
+| Persona               | Behaviour                                                                       |
+| --------------------- | ------------------------------------------------------------------------------- |
+| **Standard Attacker** | Baseline cost model, no bonuses or penalties                                    |
+| **Script Kiddie**     | Avoids firewalls (+500 extra penalty), aggressively exploits RCE (−99 discount) |
+| **APT Threat Group**  | Treats firewalls as minor obstacles (+50), crushes weak credentials (−80)       |
 
 The same topology yields completely different routes depending on persona.
 
@@ -198,10 +212,10 @@ A **Simulation Report** panel replaces the inspector after simulation:
 - **Attack Paths** — primary + alternative routes displayed separately
 - **Contributing Factors** — per-node reasons the attacker succeeded
 - **Recommended Mitigations** — deduplicated, auto-generated remediations:
-  - *Apply critical vendor security patches* (unpatched or RCE nodes)
-  - *Enforce MFA and password complexity* (weak credentials)
-  - *Review ACL rules; enforce Zero Trust* (firewall bypasses)
-  - *Encrypt network links and enable TLS* (cleartext edges)
+  - _Apply critical vendor security patches_ (unpatched or RCE nodes)
+  - _Enforce MFA and password complexity_ (weak credentials)
+  - _Review ACL rules; enforce Zero Trust_ (firewall bypasses)
+  - _Encrypt network links and enable TLS_ (cleartext edges)
 
 ---
 
@@ -224,6 +238,7 @@ Use **Export JSON** and **Import JSON** in the sidebar footer. The exported file
 ### Step 9 — Guided Onboarding Tour
 
 Click **View Tour** in the header (or it auto-runs on first visit) to launch a themed tooltip walkthrough covering:
+
 - Component Library → Canvas → Node Inspector → Run Simulation
 
 The tour auto-saves its completion state to `localStorage` so it only auto-plays once per browser session.
@@ -232,26 +247,26 @@ The tour auto-saves its completion state to `localStorage` so it only auto-plays
 
 ## Simulation Workflow
 
-| Step | Action |
-|------|--------|
-| 1 | **Design** — drag Firewalls, Servers, Workstations from the sidebar onto the canvas |
-| 2 | **Connect** — draw directed edges between nodes to define network links |
-| 3 | **Configure** — click each node to set CVSS scores, vulnerability flags, and entry/target pins |
-| 4 | **Select Persona** — choose Standard, Script Kiddie, or APT from the header dropdown |
-| 5 | **Simulate** — click **Run Simulation**; backend computes multi-path analysis |
-| 6 | **Watch** — nodes animate hop-by-hop: amber (analysing) → red (compromised) |
-| 7 | **Analyse** — Risk Report shows score, severity, contributing factors, and mitigations |
-| 8 | **Export** — download the PDF report or save the topology as JSON |
+| Step | Action                                                                                         |
+| ---- | ---------------------------------------------------------------------------------------------- |
+| 1    | **Design** — drag Firewalls, Servers, Workstations from the sidebar onto the canvas            |
+| 2    | **Connect** — draw directed edges between nodes to define network links                        |
+| 3    | **Configure** — click each node to set CVSS scores, vulnerability flags, and entry/target pins |
+| 4    | **Select Persona** — choose Standard, Script Kiddie, or APT from the header dropdown           |
+| 5    | **Simulate** — click **Run Simulation**; backend computes multi-path analysis                  |
+| 6    | **Watch** — nodes animate hop-by-hop: amber (analysing) → red (compromised)                    |
+| 7    | **Analyse** — Risk Report shows score, severity, contributing factors, and mitigations         |
+| 8    | **Export** — download the PDF report or save the topology as JSON                              |
 
 ---
 
 ## Attacker Personas
 
-| Persona | Firewall cost | RCE discount | Weak creds discount |
-|---------|--------------|--------------|----------------------|
-| **Standard** | +9999 (base) | — | — |
-| **Script Kiddie** | +10499 (+500) | **−99** | — |
-| **APT Threat Group** | +10049 (+50) | — | **−80** |
+| Persona              | Firewall cost | RCE discount | Weak creds discount |
+| -------------------- | ------------- | ------------ | ------------------- |
+| **Standard**         | +9999 (base)  | —            | —                   |
+| **Script Kiddie**    | +10499 (+500) | **−99**      | —                   |
+| **APT Threat Group** | +10049 (+50)  | —            | **−80**             |
 
 Persona selection causes `nx.shortest_simple_paths` to route through _physically different paths_ on the canvas.
 
@@ -259,15 +274,15 @@ Persona selection causes `nx.shortest_simple_paths` to route through _physically
 
 ## Risk Scoring
 
-| Event | Score Added |
-|-------|-------------|
-| Node traversed (firewall) | +10 |
-| Node traversed (server/workstation) | +20 |
-| CVSS score present | +(cvss × 5) |
-| RCE vulnerability | +30 |
-| Weak credentials | +15 |
-| Unpatched node | +10 |
-| Cleartext edge traversed | +15 |
+| Event                               | Score Added |
+| ----------------------------------- | ----------- |
+| Node traversed (firewall)           | +10         |
+| Node traversed (server/workstation) | +20         |
+| CVSS score present                  | +(cvss × 5) |
+| RCE vulnerability                   | +30         |
+| Weak credentials                    | +15         |
+| Unpatched node                      | +10         |
+| Cleartext edge traversed            | +15         |
 
 Score is clamped to **0–100**.
 

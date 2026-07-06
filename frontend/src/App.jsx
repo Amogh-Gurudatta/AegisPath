@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   addEdge,
   useNodesState,
   useEdgesState,
   MarkerType,
   ReactFlowProvider,
-} from 'reactflow';
+} from "reactflow";
 import {
   Shield,
   Play,
@@ -22,87 +22,87 @@ import {
   Moon,
   Target,
   ExternalLink,
-} from 'lucide-react';
-import Canvas from './components/Canvas';
-import Inspector from './components/Inspector';
-import Sidebar from './components/Sidebar';
-import OnboardingTour from './components/OnboardingTour';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
-import './App.css';
+} from "lucide-react";
+import Canvas from "./components/Canvas";
+import Inspector from "./components/Inspector";
+import Sidebar from "./components/Sidebar";
+import OnboardingTour from "./components/OnboardingTour";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+import "./App.css";
 
 // --- Node style helpers ---
 const NODE_STYLES = {
   internet: {
-    background: 'var(--node-internet-bg)',
-    color: 'var(--node-internet-color)',
-    border: '2px solid var(--node-internet-border)',
-    borderRadius: '10px',
-    padding: '10px 14px',
-    fontSize: '13px',
+    background: "var(--node-internet-bg)",
+    color: "var(--node-internet-color)",
+    border: "2px solid var(--node-internet-border)",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    fontSize: "13px",
     fontWeight: 600,
   },
   firewall: {
-    background: 'var(--node-firewall-bg)',
-    color: 'var(--node-firewall-color)',
-    border: '1.5px solid var(--node-firewall-border)',
-    borderRadius: '10px',
-    padding: '10px 14px',
-    fontSize: '13px',
+    background: "var(--node-firewall-bg)",
+    color: "var(--node-firewall-color)",
+    border: "1.5px solid var(--node-firewall-border)",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    fontSize: "13px",
     fontWeight: 600,
   },
   server: {
-    background: 'var(--node-server-bg)',
-    color: 'var(--node-server-color)',
-    border: '1.5px solid var(--node-server-border)',
-    borderRadius: '10px',
-    padding: '10px 14px',
-    fontSize: '13px',
+    background: "var(--node-server-bg)",
+    color: "var(--node-server-color)",
+    border: "1.5px solid var(--node-server-border)",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    fontSize: "13px",
     fontWeight: 600,
   },
   default: {
-    background: 'var(--node-default-bg)',
-    color: 'var(--node-default-color)',
-    border: '1.5px solid var(--node-default-border)',
-    borderRadius: '10px',
-    padding: '10px 14px',
-    fontSize: '13px',
+    background: "var(--node-default-bg)",
+    color: "var(--node-default-color)",
+    border: "1.5px solid var(--node-default-border)",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    fontSize: "13px",
     fontWeight: 600,
   },
   router: {
-    background: 'var(--node-router-bg)',
-    color: 'var(--node-router-color)',
-    border: '1.5px solid var(--node-router-border)',
-    borderRadius: '10px',
-    padding: '10px 14px',
-    fontSize: '13px',
+    background: "var(--node-router-bg)",
+    color: "var(--node-router-color)",
+    border: "1.5px solid var(--node-router-border)",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    fontSize: "13px",
     fontWeight: 600,
   },
   database: {
-    background: 'var(--node-database-bg)',
-    color: 'var(--node-database-color)',
-    border: '1.5px solid var(--node-database-border)',
-    borderRadius: '10px',
-    padding: '10px 14px',
-    fontSize: '13px',
+    background: "var(--node-database-bg)",
+    color: "var(--node-database-color)",
+    border: "1.5px solid var(--node-database-border)",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    fontSize: "13px",
     fontWeight: 600,
   },
   loadbalancer: {
-    background: 'var(--node-loadbalancer-bg)',
-    color: 'var(--node-loadbalancer-color)',
-    border: '1.5px solid var(--node-loadbalancer-border)',
-    borderRadius: '10px',
-    padding: '10px 14px',
-    fontSize: '13px',
+    background: "var(--node-loadbalancer-bg)",
+    color: "var(--node-loadbalancer-color)",
+    border: "1.5px solid var(--node-loadbalancer-border)",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    fontSize: "13px",
     fontWeight: 600,
   },
   cloud: {
-    background: 'var(--node-cloud-bg)',
-    color: 'var(--node-cloud-color)',
-    border: '1.5px solid var(--node-cloud-border)',
-    borderRadius: '10px',
-    padding: '10px 14px',
-    fontSize: '13px',
+    background: "var(--node-cloud-bg)",
+    color: "var(--node-cloud-color)",
+    border: "1.5px solid var(--node-cloud-border)",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    fontSize: "13px",
     fontWeight: 600,
   },
 };
@@ -115,94 +115,111 @@ const getNodeStyle = (nodeType, isInternet = false) => {
 // --- Baseline topology ---
 const initialNodes = [
   {
-    id: 'node-1',
-    type: 'default',
-    data: { label: 'External Internet' },
+    id: "node-1",
+    type: "default",
+    data: { label: "External Internet" },
     position: { x: 60, y: 160 },
     style: NODE_STYLES.internet,
-    nodeType: 'internet',
-    config: { ip_address: '0.0.0.0', description: 'External attacker entry point' },
+    nodeType: "internet",
+    config: {
+      ip_address: "0.0.0.0",
+      description: "External attacker entry point",
+    },
   },
   {
-    id: 'node-2',
-    type: 'default',
-    data: { label: 'Border Firewall' },
+    id: "node-2",
+    type: "default",
+    data: { label: "Border Firewall" },
     position: { x: 310, y: 160 },
     style: NODE_STYLES.firewall,
-    nodeType: 'firewall',
-    config: { ip_address: '10.0.0.1', allowed_ips: ['0.0.0.0/0'], version: 'v9.4' },
+    nodeType: "firewall",
+    config: {
+      ip_address: "10.0.0.1",
+      allowed_ips: ["0.0.0.0/0"],
+      version: "v9.4",
+    },
   },
   {
-    id: 'node-3',
-    type: 'default',
-    data: { label: 'Web Server (DMZ)' },
+    id: "node-3",
+    type: "default",
+    data: { label: "Web Server (DMZ)" },
     position: { x: 540, y: 70 },
     style: NODE_STYLES.server,
-    nodeType: 'server',
-    config: { ip_address: '192.168.1.50', os: 'Ubuntu 22.04 LTS', open_ports: [80, 443], cvss_score: 7.2 },
+    nodeType: "server",
+    config: {
+      ip_address: "192.168.1.50",
+      os: "Ubuntu 22.04 LTS",
+      open_ports: [80, 443],
+      cvss_score: 7.2,
+    },
   },
   {
-    id: 'node-4',
-    type: 'default',
-    data: { label: 'Database Server' },
+    id: "node-4",
+    type: "default",
+    data: { label: "Database Server" },
     position: { x: 760, y: 160 },
     style: NODE_STYLES.server,
-    nodeType: 'server',
-    config: { ip_address: '192.168.2.100', os: 'Debian 12', open_ports: [5432], db: 'PostgreSQL 16', has_weak_credentials: true },
+    nodeType: "server",
+    config: {
+      ip_address: "192.168.2.100",
+      os: "Debian 12",
+      open_ports: [5432],
+      db: "PostgreSQL 16",
+      has_weak_credentials: true,
+    },
   },
 ];
 
-const EDGE_BASE_STYLE = { stroke: '#2d3748', strokeWidth: 1.5 };
+const EDGE_BASE_STYLE = { stroke: "#2d3748", strokeWidth: 1.5 };
 
 const initialEdges = [
   {
-    id: 'edge-1-2',
-    source: 'node-1',
-    target: 'node-2',
+    id: "edge-1-2",
+    source: "node-1",
+    target: "node-2",
     style: EDGE_BASE_STYLE,
-    markerEnd: { type: MarkerType.ArrowClosed, color: '#2d3748' },
+    markerEnd: { type: MarkerType.ArrowClosed, color: "#2d3748" },
   },
   {
-    id: 'edge-2-3',
-    source: 'node-2',
-    target: 'node-3',
+    id: "edge-2-3",
+    source: "node-2",
+    target: "node-3",
     style: EDGE_BASE_STYLE,
-    markerEnd: { type: MarkerType.ArrowClosed, color: '#2d3748' },
+    markerEnd: { type: MarkerType.ArrowClosed, color: "#2d3748" },
   },
   {
-    id: 'edge-3-4',
-    source: 'node-3',
-    target: 'node-4',
+    id: "edge-3-4",
+    source: "node-3",
+    target: "node-4",
     style: EDGE_BASE_STYLE,
-    markerEnd: { type: MarkerType.ArrowClosed, color: '#2d3748' },
+    markerEnd: { type: MarkerType.ArrowClosed, color: "#2d3748" },
   },
 ];
 
 // --- Persona config ---
 const PERSONAS = [
   {
-    id: 'standard',
-    label: 'Standard Attacker',
+    id: "standard",
+    label: "Standard Attacker",
     icon: User,
-    color: '#94a3b8',
-    description: 'Baseline threat actor',
+    color: "#94a3b8",
+    description: "Baseline threat actor",
   },
   {
-    id: 'script_kiddie',
-    label: 'Script Kiddie',
+    id: "script_kiddie",
+    label: "Script Kiddie",
     icon: Zap,
-    color: '#f59e0b',
-    description: 'Automated tools, no FW bypass',
+    color: "#f59e0b",
+    description: "Automated tools, no FW bypass",
   },
   {
-    id: 'apt',
-    label: 'APT Threat Group',
+    id: "apt",
+    label: "APT Threat Group",
     icon: Lock,
-    color: '#f43f5e',
-    description: 'Zero-days, credential exploitation',
+    color: "#f43f5e",
+    description: "Zero-days, credential exploitation",
   },
 ];
-
 
 // --- Main component ---
 export default function App() {
@@ -219,9 +236,9 @@ export default function App() {
   const [riskScore, setRiskScore] = useState(0);
   const [showReport, setShowReport] = useState(false);
   const [attackTechniques, setAttackTechniques] = useState([]);
-  const [persona, setPersona] = useState('standard');
+  const [persona, setPersona] = useState("standard");
   const [loading, setLoading] = useState(false);
-  const [simulationStatus, setSimulationStatus] = useState('idle'); // 'idle' | 'running' | 'complete' | 'error'
+  const [simulationStatus, setSimulationStatus] = useState("idle"); // 'idle' | 'running' | 'complete' | 'error'
   const [error, setError] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const reactFlowWrapper = useRef(null);
@@ -229,20 +246,20 @@ export default function App() {
   const [runTour, setRunTour] = useState(false);
   const [personaOpen, setPersonaOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
-    const savedTheme = localStorage.getItem('aegispath_theme');
-    return savedTheme || 'dark';
+    const savedTheme = localStorage.getItem("aegispath_theme");
+    return savedTheme || "dark";
   });
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('aegispath_theme', theme);
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("aegispath_theme", theme);
   }, [theme]);
 
   useEffect(() => {
-    const hasSeen = localStorage.getItem('aegispath_has_seen_tour');
+    const hasSeen = localStorage.getItem("aegispath_has_seen_tour");
     if (!hasSeen) {
       setRunTour(true);
-      localStorage.setItem('aegispath_has_seen_tour', 'true');
+      localStorage.setItem("aegispath_has_seen_tour", "true");
     }
   }, []);
 
@@ -253,7 +270,7 @@ export default function App() {
           return { ...node, config: { ...node.config, ...newConfig } };
         }
         return node;
-      })
+      }),
     );
     setSelectedNode((prev) => {
       if (prev && prev.id === nodeId) {
@@ -271,7 +288,7 @@ export default function App() {
           return { ...node, data: { ...node.data, label: newLabel } };
         }
         return node;
-      })
+      }),
     );
     setSelectedNode((prev) => {
       if (prev && prev.id === nodeId) {
@@ -289,7 +306,7 @@ export default function App() {
           return { ...edge, config: { ...(edge.config || {}), ...newConfig } };
         }
         return edge;
-      })
+      }),
     );
     setSelectedEdge((prev) => {
       if (prev && prev.id === edgeId) {
@@ -299,11 +316,16 @@ export default function App() {
     });
   };
 
-  const handleDeleteNode = useCallback((nodeId) => {
-    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
-    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
-    setSelectedNode((curr) => (curr && curr.id === nodeId ? null : curr));
-  }, [setNodes, setEdges, setSelectedNode]);
+  const handleDeleteNode = useCallback(
+    (nodeId) => {
+      setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+      setEdges((eds) =>
+        eds.filter((e) => e.source !== nodeId && e.target !== nodeId),
+      );
+      setSelectedNode((curr) => (curr && curr.id === nodeId ? null : curr));
+    },
+    [setNodes, setEdges, setSelectedNode],
+  );
 
   // Removes a single custom key from a node's config
   const deleteNodeConfigKey = (nodeId, key) => {
@@ -314,7 +336,7 @@ export default function App() {
           return { ...node, config: rest };
         }
         return node;
-      })
+      }),
     );
     setSelectedNode((prev) => {
       if (prev && prev.id === nodeId) {
@@ -330,11 +352,13 @@ export default function App() {
       nodes,
       edges,
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = 'aegispath-topology.json';
+    link.download = "aegispath-topology.json";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -344,7 +368,11 @@ export default function App() {
   const importGraph = (jsonString) => {
     try {
       const parsed = JSON.parse(jsonString);
-      if (parsed && Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+      if (
+        parsed &&
+        Array.isArray(parsed.nodes) &&
+        Array.isArray(parsed.edges)
+      ) {
         setNodes(parsed.nodes);
         setEdges(parsed.edges);
         setSimulationPaths([]);
@@ -353,27 +381,27 @@ export default function App() {
         setRemediationPlan([]);
         setRiskScore(0);
         setShowReport(false);
-        setSimulationStatus('idle');
+        setSimulationStatus("idle");
         setSelectedNode(null);
         setError(null);
       } else {
-        setError('Invalid topology JSON structure.');
+        setError("Invalid topology JSON structure.");
       }
     } catch (e) {
       console.error(e);
-      setError('Failed to parse topology JSON file.');
+      setError("Failed to parse topology JSON file.");
     }
   };
 
   // --- Drag & Drop ---
   const onDragStart = (event, nodeType) => {
-    event.dataTransfer.setData('application/reactflow', nodeType);
-    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData("application/reactflow", nodeType);
+    event.dataTransfer.effectAllowed = "move";
   };
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = "move";
   }, []);
 
   const onDrop = useCallback(
@@ -382,7 +410,7 @@ export default function App() {
       if (!reactFlowWrapper.current || !reactFlowInstance) return;
 
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const type = event.dataTransfer.getData('application/reactflow');
+      const type = event.dataTransfer.getData("application/reactflow");
       if (!type) return;
 
       // Use project() for coordinate conversion (compatible with installed react-flow version)
@@ -394,20 +422,20 @@ export default function App() {
       nodeCounter.current += 1;
       const newNodeId = `node-${nodeCounter.current}`;
       const labelMap = {
-        firewall: 'Firewall Node',
-        server: 'Server Node',
-        default: 'Workstation Node',
-        router: 'Router Node',
-        database: 'Database Node',
-        loadbalancer: 'Load Balancer',
-        cloud: 'Cloud Service',
+        firewall: "Firewall Node",
+        server: "Server Node",
+        default: "Workstation Node",
+        router: "Router Node",
+        database: "Database Node",
+        loadbalancer: "Load Balancer",
+        cloud: "Cloud Service",
       };
 
       const newNode = {
         id: newNodeId,
-        type: 'default',
+        type: "default",
         position,
-        data: { label: labelMap[type] || 'Network Node' },
+        data: { label: labelMap[type] || "Network Node" },
         style: getNodeStyle(type),
         nodeType: type,
         config: {
@@ -421,7 +449,7 @@ export default function App() {
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [reactFlowInstance, setNodes]
+    [reactFlowInstance, setNodes],
   );
 
   // --- Edges ---
@@ -432,26 +460,32 @@ export default function App() {
           {
             ...params,
             style: EDGE_BASE_STYLE,
-            markerEnd: { type: MarkerType.ArrowClosed, color: '#2d3748' },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#2d3748" },
           },
-          eds
-        )
+          eds,
+        ),
       ),
-    [setEdges]
+    [setEdges],
   );
 
   // --- Node / Edge selection ---
-  const onNodeClick = useCallback((event, node) => {
-    setSelectedNode(node);
-    setSelectedEdge(null);
-    if (!isInspectorOpen) setIsInspectorOpen(true);
-  }, [isInspectorOpen]);
+  const onNodeClick = useCallback(
+    (event, node) => {
+      setSelectedNode(node);
+      setSelectedEdge(null);
+      if (!isInspectorOpen) setIsInspectorOpen(true);
+    },
+    [isInspectorOpen],
+  );
 
-  const onEdgeClick = useCallback((event, edge) => {
-    setSelectedEdge(edge);
-    setSelectedNode(null);
-    if (!isInspectorOpen) setIsInspectorOpen(true);
-  }, [isInspectorOpen]);
+  const onEdgeClick = useCallback(
+    (event, edge) => {
+      setSelectedEdge(edge);
+      setSelectedNode(null);
+      if (!isInspectorOpen) setIsInspectorOpen(true);
+    },
+    [isInspectorOpen],
+  );
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
@@ -463,17 +497,17 @@ export default function App() {
     setNodes((nds) =>
       nds.map((n) => ({
         ...n,
-        style: getNodeStyle(n.nodeType, n.nodeType === 'internet'),
-        className: '',
-      }))
+        style: getNodeStyle(n.nodeType, n.nodeType === "internet"),
+        className: "",
+      })),
     );
     setEdges((eds) =>
       eds.map((e) => ({
         ...e,
         animated: false,
         style: EDGE_BASE_STYLE,
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#2d3748' },
-      }))
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#2d3748" },
+      })),
     );
   }, [setNodes, setEdges]);
 
@@ -502,8 +536,8 @@ export default function App() {
                   (primaryPath[pIdx] === u && primaryPath[pIdx + 1] === v) ||
                   (primaryPath[pIdx] === v && primaryPath[pIdx + 1] === u)
                 ) {
-                   inPrimary = true;
-                   break;
+                  inPrimary = true;
+                  break;
                 }
               }
               if (!inPrimary) {
@@ -519,12 +553,19 @@ export default function App() {
           return {
             ...edge,
             animated: true,
-            style: { stroke: 'var(--accent-amber)', strokeWidth: 2, strokeDasharray: '5,5' },
-            markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--accent-amber)' },
+            style: {
+              stroke: "var(--accent-amber)",
+              strokeWidth: 2,
+              strokeDasharray: "5,5",
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: "var(--accent-amber)",
+            },
           };
         }
         return edge;
-      })
+      }),
     );
 
     // Animate primary path
@@ -539,14 +580,14 @@ export default function App() {
                 ...n,
                 style: {
                   ...n.style,
-                  background: 'rgba(245, 158, 11, 0.2)',
-                  color: '#f59e0b',
-                  border: '2px dashed #f59e0b',
+                  background: "rgba(245, 158, 11, 0.2)",
+                  color: "#f59e0b",
+                  border: "2px dashed #f59e0b",
                 },
-                className: 'analyzing-node',
+                className: "analyzing-node",
               }
-            : n
-        )
+            : n,
+        ),
       );
 
       await new Promise((r) => setTimeout(r, 400));
@@ -559,15 +600,16 @@ export default function App() {
                 ...n,
                 style: {
                   ...n.style,
-                  background: 'rgba(244, 63, 94, 0.2)',
-                  color: '#f43f5e',
-                  border: '2px solid #f43f5e',
-                  boxShadow: '0 0 18px rgba(244, 63, 94, 0.55), inset 0 0 8px rgba(244, 63, 94, 0.1)',
+                  background: "rgba(244, 63, 94, 0.2)",
+                  color: "#f43f5e",
+                  border: "2px solid #f43f5e",
+                  boxShadow:
+                    "0 0 18px rgba(244, 63, 94, 0.55), inset 0 0 8px rgba(244, 63, 94, 0.1)",
                 },
-                className: '',
+                className: "",
               }
-            : n
-        )
+            : n,
+        ),
       );
 
       // Activate edge leading to this node
@@ -580,11 +622,11 @@ export default function App() {
               ? {
                   ...e,
                   animated: true,
-                  style: { stroke: '#f43f5e', strokeWidth: 2.5 },
-                  markerEnd: { type: MarkerType.ArrowClosed, color: '#f43f5e' },
+                  style: { stroke: "#f43f5e", strokeWidth: 2.5 },
+                  markerEnd: { type: MarkerType.ArrowClosed, color: "#f43f5e" },
                 }
-              : e
-          )
+              : e,
+          ),
         );
       }
 
@@ -595,12 +637,12 @@ export default function App() {
   // --- Simulation ---
   const handleRunSimulation = async () => {
     if (nodes.length < 2) {
-      setError('Add at least two nodes and connect them before simulating.');
+      setError("Add at least two nodes and connect them before simulating.");
       return;
     }
 
     setLoading(true);
-    setSimulationStatus('running');
+    setSimulationStatus("running");
     setError(null);
     setShowReport(false);
 
@@ -608,8 +650,11 @@ export default function App() {
       const payload = {
         nodes: nodes.map((n) => ({
           id: n.id,
-          label: n.data.label || 'Unnamed Node',
-          type: n.nodeType === 'internet' ? 'workstation' : (n.nodeType || 'workstation'),
+          label: n.data.label || "Unnamed Node",
+          type:
+            n.nodeType === "internet"
+              ? "workstation"
+              : n.nodeType || "workstation",
           config: n.config || {},
         })),
         edges: edges.map((e) => ({
@@ -621,10 +666,10 @@ export default function App() {
         persona,
       };
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
       const response = await fetch(`${apiUrl}/api/simulate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -648,11 +693,11 @@ export default function App() {
         setAttackTechniques(result.attack_path_techniques || []);
 
         await runSequentialAnimation(paths);
-        setSimulationStatus('complete');
+        setSimulationStatus("complete");
         setShowReport(true);
       }
     } catch (err) {
-      console.error('[AegisPath] Simulation failed:', err);
+      console.error("[AegisPath] Simulation failed:", err);
 
       setSimulationPaths([]);
       setContributingFactors([]);
@@ -661,9 +706,9 @@ export default function App() {
       setRiskScore(0);
       setAttackTechniques([]);
 
-      setSimulationStatus('error');
+      setSimulationStatus("error");
       setShowReport(false);
-      setError(`Simulation failed: ${err.message || 'Backend unreachable'}`);
+      setError(`Simulation failed: ${err.message || "Backend unreachable"}`);
     } finally {
       setLoading(false);
     }
@@ -679,8 +724,8 @@ export default function App() {
     setRiskScore(0);
     setAttackTechniques([]);
     setShowReport(false);
-    setPersona('standard');
-    setSimulationStatus('idle');
+    setPersona("standard");
+    setSimulationStatus("idle");
     setSelectedNode(null);
     setError(null);
   };
@@ -700,22 +745,25 @@ export default function App() {
     await new Promise((r) => setTimeout(r, 300));
 
     try {
-      const container = document.querySelector('.canvas-container');
+      const container = document.querySelector(".canvas-container");
       if (!container) return;
 
-      const activeBgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim() || '#080a0f';
+      const activeBgColor =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--bg-primary")
+          .trim() || "#080a0f";
       const canvas = await html2canvas(container, {
         backgroundColor: activeBgColor,
         logging: false,
         useCORS: true,
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL("image/png");
 
       const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
       });
 
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -723,26 +771,30 @@ export default function App() {
 
       // Draw Professional Header Panel
       pdf.setFillColor(13, 16, 23);
-      pdf.rect(0, 0, pageWidth, 40, 'F');
+      pdf.rect(0, 0, pageWidth, 40, "F");
 
       pdf.setTextColor(244, 63, 94);
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setFontSize(18);
-      pdf.text('AegisPath Automated Threat Model Report', 15, 18);
+      pdf.text("AegisPath Automated Threat Model Report", 15, 18);
 
       pdf.setTextColor(148, 163, 184);
-      pdf.setFont('helvetica', 'normal');
+      pdf.setFont("helvetica", "normal");
       pdf.setFontSize(10);
       const currentDate = new Date().toLocaleString();
       pdf.text(`Date generated: ${currentDate}`, 15, 26);
-      pdf.text(`Attacker Persona: ${PERSONAS.find((p) => p.id === persona)?.label || persona}  |  Risk Score: ${riskScore.toFixed(0)}/100`, 15, 32);
+      pdf.text(
+        `Attacker Persona: ${PERSONAS.find((p) => p.id === persona)?.label || persona}  |  Risk Score: ${riskScore.toFixed(0)}/100`,
+        15,
+        32,
+      );
 
       // Embed Canvas Screenshot
       const margin = 15;
       const imgWidth = pageWidth - margin * 2;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      pdf.addImage(imgData, 'PNG', margin, 48, imgWidth, imgHeight);
+      pdf.addImage(imgData, "PNG", margin, 48, imgWidth, imgHeight);
 
       // Render Text Data Below Image
       let cursorY = 48 + imgHeight + 15;
@@ -757,13 +809,13 @@ export default function App() {
       // 1. Contributing Factors
       checkPageBreak(35);
       pdf.setTextColor(225, 29, 72); // High-contrast crimson
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setFontSize(12);
-      pdf.text('Contributing Risk Factors', margin, cursorY);
+      pdf.text("Contributing Risk Factors", margin, cursorY);
       cursorY += 8;
 
       pdf.setTextColor(30, 41, 59); // Dark slate for excellent readability on white
-      pdf.setFont('helvetica', 'normal');
+      pdf.setFont("helvetica", "normal");
       pdf.setFontSize(10);
 
       if (simulationReport.length > 0) {
@@ -776,7 +828,7 @@ export default function App() {
           });
         });
       } else {
-        pdf.text('No critical risk factors identified.', margin, cursorY);
+        pdf.text("No critical risk factors identified.", margin, cursorY);
         cursorY += 8;
       }
 
@@ -785,13 +837,13 @@ export default function App() {
       // 2. Recommended Mitigations
       checkPageBreak(35);
       pdf.setTextColor(5, 150, 105); // High-contrast emerald green
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setFontSize(12);
-      pdf.text('Recommended Mitigations', margin, cursorY);
+      pdf.text("Recommended Mitigations", margin, cursorY);
       cursorY += 8;
 
       pdf.setTextColor(30, 41, 59); // Dark slate for excellent readability on white
-      pdf.setFont('helvetica', 'normal');
+      pdf.setFont("helvetica", "normal");
       pdf.setFontSize(10);
 
       if (remediationPlan.length > 0) {
@@ -804,13 +856,13 @@ export default function App() {
           });
         });
       } else {
-        pdf.text('No mitigations required.', margin, cursorY);
+        pdf.text("No mitigations required.", margin, cursorY);
         cursorY += 8;
       }
 
-      pdf.save('AegisPath_Threat_Report.pdf');
+      pdf.save("AegisPath_Threat_Report.pdf");
     } catch (err) {
-      console.error('[AegisPath] Failed to generate PDF Report:', err);
+      console.error("[AegisPath] Failed to generate PDF Report:", err);
     } finally {
       // Restore UI overlays
       setIsSidebarOpen(wasSidebarOpen);
@@ -822,9 +874,14 @@ export default function App() {
   // --- Derived values ---
   const primaryPath = simulationPaths[0] || [];
   const activePersona = PERSONAS.find((p) => p.id === persona) || PERSONAS[0];
-  const severityLabel = riskScore >= 70 ? 'CRITICAL' : riskScore >= 40 ? 'HIGH' : 'MODERATE';
+  const severityLabel =
+    riskScore >= 70 ? "CRITICAL" : riskScore >= 40 ? "HIGH" : "MODERATE";
   const severityColor =
-    riskScore >= 70 ? 'var(--accent-rose)' : riskScore >= 40 ? 'var(--accent-amber)' : 'var(--accent-emerald)';
+    riskScore >= 70
+      ? "var(--accent-rose)"
+      : riskScore >= 40
+        ? "var(--accent-amber)"
+        : "var(--accent-emerald)";
 
   return (
     <div className="dashboard-container">
@@ -839,16 +896,16 @@ export default function App() {
         {/* Status bar indicator */}
         <div className="header-status">
           <span
-            className={`status-dot ${simulationStatus === 'running' ? 'status-dot--running' : simulationStatus === 'complete' ? 'status-dot--complete' : simulationStatus === 'error' ? 'status-dot--error' : 'status-dot--idle'}`}
+            className={`status-dot ${simulationStatus === "running" ? "status-dot--running" : simulationStatus === "complete" ? "status-dot--complete" : simulationStatus === "error" ? "status-dot--error" : "status-dot--idle"}`}
           />
           <span className="status-label">
-            {simulationStatus === 'running'
-              ? 'Simulation Running…'
-              : simulationStatus === 'complete'
-              ? `Attack Path Resolved · ${primaryPath.length} Hops`
-              : simulationStatus === 'error'
-              ? 'Offline Mode'
-              : `${nodes.length} Nodes · ${edges.length} Edges`}
+            {simulationStatus === "running"
+              ? "Simulation Running…"
+              : simulationStatus === "complete"
+                ? `Attack Path Resolved · ${primaryPath.length} Hops`
+                : simulationStatus === "error"
+                  ? "Offline Mode"
+                  : `${nodes.length} Nodes · ${edges.length} Edges`}
           </span>
         </div>
 
@@ -856,20 +913,34 @@ export default function App() {
           {/* Persona selector — custom themed dropdown */}
           <div
             className="persona-selector"
-            style={{ position: 'relative', cursor: loading ? 'not-allowed' : 'pointer' }}
+            style={{
+              position: "relative",
+              cursor: loading ? "not-allowed" : "pointer",
+            }}
             onClick={() => !loading && setPersonaOpen((v) => !v)}
           >
-            <activePersona.icon size={14} style={{ color: activePersona.color, flexShrink: 0 }} />
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', userSelect: 'none', whiteSpace: 'nowrap' }}>
+            <activePersona.icon
+              size={14}
+              style={{ color: activePersona.color, flexShrink: 0 }}
+            />
+            <span
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--text-primary)",
+                userSelect: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
               {activePersona.label}
             </span>
             <ChevronRight
               size={13}
               style={{
-                color: 'var(--text-muted)',
-                transform: personaOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s',
-                marginLeft: '2px',
+                color: "var(--text-muted)",
+                transform: personaOpen ? "rotate(90deg)" : "rotate(0deg)",
+                transition: "transform 0.2s",
+                marginLeft: "2px",
               }}
             />
 
@@ -877,30 +948,46 @@ export default function App() {
               <>
                 {/* Click-away backdrop */}
                 <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
-                  onClick={(e) => { e.stopPropagation(); setPersonaOpen(false); }}
+                  style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPersonaOpen(false);
+                  }}
                 />
                 {/* Dropdown panel */}
-                <div style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  left: 0,
-                  zIndex: 9999,
-                  minWidth: '260px',
-                  background: 'rgba(13, 16, 23, 0.97)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 'var(--radius-md)',
-                  boxShadow: '0 20px 48px -8px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.1)',
-                  backdropFilter: 'blur(20px)',
-                  overflow: 'hidden',
-                  padding: '6px',
-                }}>
-                  <div style={{
-                    padding: '6px 10px 8px',
-                    borderBottom: '1px solid var(--border-color)',
-                    marginBottom: '4px',
-                  }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    left: 0,
+                    zIndex: 9999,
+                    minWidth: "260px",
+                    background: "rgba(13, 16, 23, 0.97)",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "var(--radius-md)",
+                    boxShadow:
+                      "0 20px 48px -8px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.1)",
+                    backdropFilter: "blur(20px)",
+                    overflow: "hidden",
+                    padding: "6px",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "6px 10px 8px",
+                      borderBottom: "1px solid var(--border-color)",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "10px",
+                        letterSpacing: "1px",
+                        textTransform: "uppercase",
+                        color: "var(--text-muted)",
+                      }}
+                    >
                       Attacker Persona
                     </span>
                   </div>
@@ -909,43 +996,89 @@ export default function App() {
                     return (
                       <div
                         key={p.id}
-                        onClick={(e) => { e.stopPropagation(); setPersona(p.id); setPersonaOpen(false); }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
-                          padding: '10px 12px',
-                          borderRadius: 'var(--radius-sm)',
-                          cursor: 'pointer',
-                          background: isActive ? `${p.color}14` : 'transparent',
-                          border: isActive ? `1px solid ${p.color}30` : '1px solid transparent',
-                          transition: 'background 0.15s, border-color 0.15s',
-                          marginBottom: '2px',
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPersona(p.id);
+                          setPersonaOpen(false);
                         }}
-                        onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
-                        onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          padding: "10px 12px",
+                          borderRadius: "var(--radius-sm)",
+                          cursor: "pointer",
+                          background: isActive ? `${p.color}14` : "transparent",
+                          border: isActive
+                            ? `1px solid ${p.color}30`
+                            : "1px solid transparent",
+                          transition: "background 0.15s, border-color 0.15s",
+                          marginBottom: "2px",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isActive)
+                            e.currentTarget.style.background =
+                              "var(--bg-elevated)";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isActive)
+                            e.currentTarget.style.background = "transparent";
+                        }}
                       >
                         {/* Colored icon badge */}
-                        <div style={{
-                          width: 32, height: 32, borderRadius: '8px', flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: `${p.color}18`,
-                          border: `1px solid ${p.color}35`,
-                        }}>
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "8px",
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: `${p.color}18`,
+                            border: `1px solid ${p.color}35`,
+                          }}
+                        >
                           <p.icon size={15} style={{ color: p.color }} />
                         </div>
                         {/* Label + description */}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: isActive ? p.color : 'var(--text-primary)', marginBottom: '2px' }}>
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: 600,
+                              color: isActive ? p.color : "var(--text-primary)",
+                              marginBottom: "2px",
+                            }}
+                          >
                             {p.label}
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--text-muted)",
+                              fontFamily: "var(--font-mono)",
+                              letterSpacing: "0.2px",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
                             {p.description}
                           </div>
                         </div>
                         {/* Active check */}
                         {isActive && (
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: p.color, flexShrink: 0, boxShadow: `0 0 8px ${p.color}` }} />
+                          <div
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              background: p.color,
+                              flexShrink: 0,
+                              boxShadow: `0 0 8px ${p.color}`,
+                            }}
+                          />
                         )}
                       </div>
                     );
@@ -970,15 +1103,22 @@ export default function App() {
 
           <button
             className="btn theme-toggle-btn"
-            onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             disabled={loading}
           >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            <span className="btn-label">{theme === 'dark' ? 'Light' : 'Dark'} Mode</span>
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            <span className="btn-label">
+              {theme === "dark" ? "Light" : "Dark"} Mode
+            </span>
           </button>
 
-          <button className="btn" onClick={handleResetGraph} title="Reset canvas" disabled={loading}>
+          <button
+            className="btn"
+            onClick={handleResetGraph}
+            title="Reset canvas"
+            disabled={loading}
+          >
             <RefreshCw size={16} />
             <span className="btn-label">Reset</span>
           </button>
@@ -989,8 +1129,12 @@ export default function App() {
             disabled={loading}
             title="Run attack path simulation"
           >
-            {loading ? <Activity size={16} className="spin" /> : <Play size={16} />}
-            <span>{loading ? 'Simulating…' : 'Run Simulation'}</span>
+            {loading ? (
+              <Activity size={16} className="spin" />
+            ) : (
+              <Play size={16} />
+            )}
+            <span>{loading ? "Simulating…" : "Run Simulation"}</span>
           </button>
         </div>
       </header>
@@ -1038,7 +1182,11 @@ export default function App() {
                   <AlertTriangle className="report-icon" size={16} />
                   <h3>Risk Assessment Report</h3>
                 </div>
-                <button className="close-report-btn" onClick={() => setShowReport(false)} title="Dismiss">
+                <button
+                  className="close-report-btn"
+                  onClick={() => setShowReport(false)}
+                  title="Dismiss"
+                >
                   <X size={15} />
                 </button>
               </div>
@@ -1048,19 +1196,32 @@ export default function App() {
                 <div className="score-section">
                   <div
                     className="score-gauge"
-                    style={{ borderColor: severityColor, boxShadow: `0 0 14px ${severityColor}44` }}
+                    style={{
+                      borderColor: severityColor,
+                      boxShadow: `0 0 14px ${severityColor}44`,
+                    }}
                   >
-                    <span className="score-value" style={{ color: severityColor }}>
+                    <span
+                      className="score-value"
+                      style={{ color: severityColor }}
+                    >
                       {riskScore.toFixed(0)}
                     </span>
                     <span className="score-label">/ 100</span>
                   </div>
                   <div className="score-meta">
-                    <h4 className="score-severity" style={{ color: severityColor }}>
+                    <h4
+                      className="score-severity"
+                      style={{ color: severityColor }}
+                    >
                       {severityLabel}
                     </h4>
-                    <p className="score-detail">Persona: <strong>{activePersona.label}</strong></p>
-                    <p className="score-detail">Path length: <strong>{primaryPath.length} hops</strong></p>
+                    <p className="score-detail">
+                      Persona: <strong>{activePersona.label}</strong>
+                    </p>
+                    <p className="score-detail">
+                      Path length: <strong>{primaryPath.length} hops</strong>
+                    </p>
                   </div>
                 </div>
 
@@ -1071,24 +1232,47 @@ export default function App() {
                     <ul className="factors-list">
                       {contributingFactors.map((factor, idx) => (
                         <li key={idx} className="factor-item">
-                          <span className="bullet" style={{ color: severityColor }}>▸</span>
+                          <span
+                            className="bullet"
+                            style={{ color: severityColor }}
+                          >
+                            ▸
+                          </span>
                           <span className="factor-text">{factor}</span>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="factors-empty">No critical risk factors found on this path.</p>
+                    <p className="factors-empty">
+                      No critical risk factors found on this path.
+                    </p>
                   )}
                 </div>
 
                 {/* MITRE ATT&CK Techniques */}
                 {attackTechniques.length > 0 && (
-                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
-                    <h4 className="factors-title" style={{ color: 'var(--accent-rose)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                  <div
+                    style={{
+                      borderTop: "1px solid var(--border-color)",
+                      paddingTop: "12px",
+                    }}
+                  >
+                    <h4
+                      className="factors-title"
+                      style={{
+                        color: "var(--accent-rose)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        marginBottom: "10px",
+                      }}
+                    >
                       <Target size={12} />
                       <span>MITRE ATT&amp;CK Techniques Observed</span>
                     </h4>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    <div
+                      style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}
+                    >
                       {attackTechniques.map((t) => (
                         <a
                           key={t.id}
@@ -1097,47 +1281,111 @@ export default function App() {
                           rel="noopener noreferrer"
                           title={`${t.tactic}: ${t.name}`}
                           style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            background: 'rgba(244, 63, 94, 0.08)',
-                            border: '1px solid rgba(244, 63, 94, 0.3)',
-                            borderRadius: '6px',
-                            padding: '4px 8px',
-                            textDecoration: 'none',
-                            color: 'var(--text-primary)',
-                            fontSize: '11.5px',
-                            fontFamily: 'var(--font-mono)',
-                            transition: 'background 0.15s, border-color 0.15s',
-                            cursor: 'pointer',
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            background: "rgba(244, 63, 94, 0.08)",
+                            border: "1px solid rgba(244, 63, 94, 0.3)",
+                            borderRadius: "6px",
+                            padding: "4px 8px",
+                            textDecoration: "none",
+                            color: "var(--text-primary)",
+                            fontSize: "11.5px",
+                            fontFamily: "var(--font-mono)",
+                            transition: "background 0.15s, border-color 0.15s",
+                            cursor: "pointer",
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(244,63,94,0.18)'; e.currentTarget.style.borderColor = 'rgba(244,63,94,0.6)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(244,63,94,0.08)'; e.currentTarget.style.borderColor = 'rgba(244,63,94,0.3)'; }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background =
+                              "rgba(244,63,94,0.18)";
+                            e.currentTarget.style.borderColor =
+                              "rgba(244,63,94,0.6)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background =
+                              "rgba(244,63,94,0.08)";
+                            e.currentTarget.style.borderColor =
+                              "rgba(244,63,94,0.3)";
+                          }}
                         >
-                          <span style={{ color: 'var(--accent-rose)', fontWeight: 700 }}>{t.id}</span>
-                          <span style={{ color: 'var(--text-secondary)' }}>{t.name}</span>
-                          <ExternalLink size={9} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                          <span
+                            style={{
+                              color: "var(--accent-rose)",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {t.id}
+                          </span>
+                          <span style={{ color: "var(--text-secondary)" }}>
+                            {t.name}
+                          </span>
+                          <ExternalLink
+                            size={9}
+                            style={{
+                              color: "var(--text-muted)",
+                              flexShrink: 0,
+                            }}
+                          />
                         </a>
                       ))}
                     </div>
-                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                      Hover a badge for tactic context · Click to open MITRE ATT&amp;CK reference
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        color: "var(--text-muted)",
+                        marginTop: "8px",
+                      }}
+                    >
+                      Hover a badge for tactic context · Click to open MITRE
+                      ATT&amp;CK reference
                     </p>
                   </div>
                 )}
 
                 {/* Recommended Mitigations */}
-                <div className="remediations-section" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
-                  <h4 className="factors-title" style={{ color: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div
+                  className="remediations-section"
+                  style={{
+                    borderTop: "1px solid var(--border-color)",
+                    paddingTop: "12px",
+                  }}
+                >
+                  <h4
+                    className="factors-title"
+                    style={{
+                      color: "var(--accent-emerald)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
                     <Shield size={12} />
                     <span>Recommended Mitigations</span>
                   </h4>
                   {remediationPlan.length > 0 ? (
-                    <ul className="factors-list" style={{ marginTop: '8px' }}>
+                    <ul className="factors-list" style={{ marginTop: "8px" }}>
                       {remediationPlan.map((action, idx) => (
-                        <li key={idx} className="factor-item" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                          <span className="bullet" style={{ color: 'var(--accent-emerald)' }}>✓</span>
-                          <span className="factor-text" style={{ color: 'var(--text-primary)' }}>{action}</span>
+                        <li
+                          key={idx}
+                          className="factor-item"
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            alignItems: "flex-start",
+                          }}
+                        >
+                          <span
+                            className="bullet"
+                            style={{ color: "var(--accent-emerald)" }}
+                          >
+                            ✓
+                          </span>
+                          <span
+                            className="factor-text"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            {action}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -1147,15 +1395,22 @@ export default function App() {
                 </div>
 
                 {/* PDF Generation Action */}
-                <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex' }}>
+                <div
+                  style={{
+                    marginTop: "16px",
+                    borderTop: "1px solid var(--border-color)",
+                    paddingTop: "12px",
+                    display: "flex",
+                  }}
+                >
                   <button
                     className="btn btn-primary"
                     onClick={generatePDFReport}
                     style={{
-                      width: '100%',
-                      justifyContent: 'center',
-                      background: 'var(--accent-indigo)',
-                      borderColor: 'transparent',
+                      width: "100%",
+                      justifyContent: "center",
+                      background: "var(--accent-indigo)",
+                      borderColor: "transparent",
                     }}
                   >
                     Download Risk Report (PDF)

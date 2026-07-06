@@ -6,7 +6,7 @@ from app.engine import compute_attack_path
 app = FastAPI(
     title="AegisPath Simulation API",
     description="API for simulating lateral movement and computing attack paths in a network threat topology.",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 from app.config import CORS_ORIGINS
@@ -18,6 +18,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.post("/api/simulate", response_model=SimulationResponse)
 def simulate_topology(graph_data: NetworkGraph):
@@ -34,8 +35,9 @@ def simulate_topology(graph_data: NetworkGraph):
         "risk_score": result["risk_score"],
         "attack_path_techniques": result.get("attack_path_techniques", []),
         "primary_hop_techniques": result.get("primary_hop_techniques", []),
-        "message": f"Successfully simulated graph containing {len(graph_data.nodes)} nodes and {len(graph_data.edges)} edges."
+        "message": f"Successfully simulated graph containing {len(graph_data.nodes)} nodes and {len(graph_data.edges)} edges.",
     }
+
 
 @app.get("/health")
 def health_check():
@@ -43,4 +45,3 @@ def health_check():
     Service health check endpoint.
     """
     return {"status": "healthy"}
-
