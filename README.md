@@ -1,55 +1,36 @@
 # AegisPath
 
-> **Enterprise-grade interactive threat topology simulator** for modeling, simulating, and scoring attack paths through network architectures.
+**Interactive threat topology simulator.** Model your network, run an attack-path simulation, and get a prioritised risk report — in seconds.
 
-[![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20NetworkX-blue.svg)](https://github.com/Amogh-Gurudatta/AegisPath/tree/main/backend)
-[![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-purple.svg)](https://github.com/Amogh-Gurudatta/AegisPath/tree/main/frontend)
-[![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](https://github.com/Amogh-Gurudatta/AegisPath/blob/main/LICENSE)
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://aegis-path-phi.vercel.app/)
 [![API](https://img.shields.io/badge/API-Railway-violet.svg)](https://aegispath-production.up.railway.app/docs)
+[![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20NetworkX-blue.svg)](./backend)
+[![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-purple.svg)](./frontend)
+[![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](./LICENSE)
 
 ---
 
-## 🚀 Live Demo
+## Live Deployment
 
-| Service          | URL                                                                                                  |
-| ---------------- | ---------------------------------------------------------------------------------------------------- |
-| **Frontend**     | [https://aegis-path-phi.vercel.app/](https://aegis-path-phi.vercel.app/)                             |
-| **Backend API**  | [https://aegispath-production.up.railway.app](https://aegispath-production.up.railway.app)           |
-| **Swagger Docs** | [https://aegispath-production.up.railway.app/docs](https://aegispath-production.up.railway.app/docs) |
-
----
-
-## What is AegisPath?
-
-AegisPath is a full-stack cybersecurity simulation platform. Security engineers drag-and-drop network nodes (firewalls, servers, workstations) onto an interactive canvas, wire them together, and run a simulation that:
-
-1. Constructs a directed graph from the topology using **NetworkX**
-2. Calculates **dynamic, stateful edge weights** based on real-world factors — CVSS scores, IP whitelists, open ports, and vulnerability flags
-3. Applies an **attacker persona** (Script Kiddie, APT, Standard) that shifts algorithm priorities and re-routes the path
-4. Allows setting custom **Attacker Entry Point** and **High-Value Target** pins to dynamically solve any route
-5. Runs **multi-path analysis** (`nx.shortest_simple_paths`) returning the **top 3 attack routes** by cost
-6. Visualises the primary path hop-by-hop in **red** and alternative paths in **amber/dashed** style
-7. Delivers a **Risk Assessment Report** (0–100 score) with colour-coded severity, contributing factors, and deduplicated **actionable mitigations**
-8. Maps compromised hops to **MITRE ATT&CK® techniques** (e.g. Initial Access, Lateral Movement) and displays them in the report
-9. Supports live **CVE lookups via NIST NVD**, auto-filling CVSS scores and descriptions based on real CVE IDs
-10. Detects **cleartext links** (`unencrypted: true` edge config) and includes them in the risk score and contributing factors
-11. Generates and downloads an **Enterprise PDF report** — canvas screenshot, date, persona, risk score, factors, MITRE tactics, and mitigations
-12. Supports **JSON import/export** to save and reload complete network topologies
-13. Includes a **guided onboarding tour** (React Joyride) with a themed tooltip walkthrough of every panel
+| | URL |
+|---|---|
+| **App** | https://aegis-path-phi.vercel.app/ |
+| **API** | https://aegispath-production.up.railway.app |
+| **Swagger** | https://aegispath-production.up.railway.app/docs |
 
 ---
 
-## Why This Matters
+## What it does
 
-Most security teams model threats on whiteboards or in spreadsheets — static, slow, and disconnected from how networks actually behave. AegisPath makes threat modeling **interactive and quantitative**:
+Security engineers use AegisPath to model a real network topology, simulate how an attacker would move through it, and get a concrete risk report — rather than guessing on a whiteboard.
 
-- **Visualise blast radius before an incident.** See exactly which path an attacker would take through your real topology, not a hypothetical one.
-- **Persona-aware routing changes the answer.** A Script Kiddie and an APT actor take measurably different paths through the same network — AegisPath shows you both.
-- **Risk is scored, not guessed.** Every node's CVSS score, patch state, and credential hygiene feeds directly into a 0–100 risk score with full factor attribution.
-- **MITRE ATT&CK mapped natively.** Understand _how_ an attacker moves. The engine automatically tags compromised hops with standard T-codes (e.g. T1190, T1021).
-- **Remediations are specific, not generic.** Instead of "apply patches," the engine tells you _which nodes_ are unpatched, _which ones_ have exploitable credentials, and _which links_ are cleartext — so engineers fix the right things first.
-- **It runs entirely locally.** No data leaves your machine (except voluntary CVE lookups). The simulation engine, pathfinder, and report generator are all self-hosted.
+1. **Drag nodes** — Firewall, Server, Workstation, Router, Database, Load Balancer, or Cloud — onto the canvas and connect them.
+2. **Configure each node** — IP address, CVSS score, open ports, vulnerability flags. Paste a real CVE ID to auto-fetch its score from NIST NVD.
+3. **Pin entry & target** — mark which node is the attacker's starting point and which is the high-value goal.
+4. **Pick a persona** — Standard, Script Kiddie, or APT. The same topology produces measurably different routes depending on the attacker model.
+5. **Run the simulation** — the backend computes the top 3 attack routes and animates them hop-by-hop on the canvas.
+6. **Read the report** — 0–100 risk score, per-node contributing factors, MITRE ATT&CK® technique badges (linked to attack.mitre.org), and deduplicated mitigations.
+7. **Export** — download a PDF report, or save/load the full topology as JSON.
 
 ---
 
@@ -57,232 +38,105 @@ Most security teams model threats on whiteboards or in spreadsheets — static, 
 
 ```
 AegisPath/
-├── backend/                     # FastAPI REST API + NetworkX simulation engine
-│   ├── app/
-│   │   ├── engine.py            # Multi-path Dijkstra, stateful cost model, risk scoring, remediation mapper
-│   │   ├── main.py              # API routes: POST /api/simulate · GET /health
-│   │   └── schemas.py           # Pydantic models: NodeModel, EdgeModel, NetworkGraph, SimulationResponse
-│   └── requirements.txt
+├── backend/                    # FastAPI REST API + NetworkX simulation engine
+│   └── app/
+│       ├── engine.py           # Multi-path Dijkstra, cost model, risk scoring, ATT&CK annotation
+│       ├── main.py             # Routes: POST /api/simulate · GET /health
+│       └── schemas.py          # Pydantic models: NetworkGraph, SimulationResponse
 │
-├── frontend/                    # React 18 + Vite interactive dashboard
-│   ├── src/
-│   │   ├── App.jsx              # Root: state management, DnD, path animation, PDF generation, API calls
-│   │   ├── components/
-│   │   │   ├── Canvas.jsx       # ReactFlow canvas — nodes, edges, minimap, controls, custom node rendering
-│   │   │   ├── Inspector.jsx    # Live config editor — all node fields, pin controllers
-│   │   │   ├── Sidebar.jsx      # Drag-and-drop palette, simulation summary, JSON import/export, collapse toggle
-│   │   │   └── OnboardingTour.jsx # Guided product tour (React Joyride), site-themed tooltip system
-│   │   └── index.css            # Enterprise design system — CSS variables, glass UI, animations
-│   └── package.json
-│
-└── README.md                    # ← you are here
+└── frontend/                   # React 18 + Vite dashboard
+    └── src/
+        ├── App.jsx             # Root: state, animation, simulation, PDF export
+        ├── index.css           # Design system — CSS variables, glass UI, animations
+        └── components/
+            ├── Canvas.jsx      # ReactFlow canvas — nodes, edges, minimap, controls
+            ├── Inspector.jsx   # Node config editor — CVE lookup, ATT&CK tags, validation
+            ├── Sidebar.jsx     # Component palette, simulation summary, JSON import/export
+            └── OnboardingTour.jsx  # Guided walkthrough (React Joyride)
 ```
 
 ---
 
-## Quick Start
+## Stack
 
-You need **Python 3.10+** and **Node.js 18+**.
+| Layer | Tech |
+|---|---|
+| Backend | Python · FastAPI · NetworkX |
+| Frontend | React 18 · Vite · ReactFlow |
+| Styling | Vanilla CSS (custom design system) |
 
-> **Want to skip setup?** The app is live at [https://aegis-path-phi.vercel.app/](https://aegis-path-phi.vercel.app/) — no installation needed.
+---
 
-### 1. Backend
+## Local Setup
 
+> **No setup needed** to try it — the live app is at https://aegis-path-phi.vercel.app/
+
+**Backend**
 ```bash
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
+# API at http://127.0.0.1:8000 · Swagger at /docs
 ```
 
-API available at `http://127.0.0.1:8000`  
-Swagger UI at `http://127.0.0.1:8000/docs`
-
-### 2. Frontend
-
+**Frontend**
 ```bash
-# In a new terminal
 cd frontend
 npm install
-npm run dev
+npm run dev        # http://localhost:5173
 ```
 
-Dashboard available at `http://localhost:5173`
+**Environment files**
 
-### 3. Environment Configuration
-
-Both backend and frontend support configuration via `.env` files:
-
-- **Backend (`backend/.env`):**
-  ```env
-  PORT=8000
-  HOST=127.0.0.1
-  CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-  ```
-- **Frontend (`frontend/.env`):**
-  ```env
-  VITE_API_URL=http://127.0.0.1:8000
-  ```
+`backend/.env`
+```env
+PORT=8000
+HOST=127.0.0.1
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+`frontend/.env`
+```env
+VITE_API_URL=http://127.0.0.1:8000
+```
 
 ---
 
-## How to Use
+## How the engine works
 
-### Step 1 — Build your Network Topology
-
-The **Component Library** on the left panel contains three draggable node types:
-
-| Node                  | Icon | Role                                                  |
-| --------------------- | ---- | ----------------------------------------------------- |
-| **Firewall Guard**    | 🛡️   | Filters and controls traffic between network segments |
-| **Enterprise Server** | 🖥️   | Hosts services, databases, and internal applications  |
-| **User Workstation**  | 💻   | Endpoints used for lateral movement pivots            |
-| **Network Router**    | 🖧    | Core networking infrastructure                        |
-| **Database**          | 🗄️   | Data storage containing high-value assets             |
-| **Load Balancer**     | ⚖️   | Distributes incoming traffic                          |
-| **Cloud Service**     | ☁️   | External or internal cloud-hosted resources           |
-
-Drag any node onto the canvas. Click the collapse `◧` icon in the library header to hide the panel and gain more canvas space — a floating tab appears on the left edge to reopen it.
-
----
-
-### Step 2 — Connect Nodes
-
-Hover over any node until the **connection handle** appears on its edge. Drag to another node to draw a directed edge. Edges are directional — the attacker follows them in order.
-
-> **Tip:** Nodes disconnected from the Entry→Target path are ignored by the pathfinder.
-
----
-
-### Step 3 — Configure Each Node
-
-Click any node to open the **Node Inspector** on the right. Configurable fields:
-
-| Property                  | Effect on simulation                                                 |
-| ------------------------- | -------------------------------------------------------------------- |
-| **IP Address**            | Used for IP-whitelist bypass checks on firewalls                     |
-| **CVE ID**                | Paste a CVE to auto-fetch details from NIST NVD                      |
-| **CVSS Score** (0–10)     | Higher = lower traversal cost = more attractive to attacker          |
-| **Has RCE Vulnerability** | Grants −99 cost discount for Script Kiddie persona                   |
-| **Has Weak Credentials**  | Grants −80 cost discount for APT persona                             |
-| **Is Patched**            | `false` raises risk score +10 and generates a remediation            |
-| **Open Ports**            | Shared ports between adjacent compromised nodes lower traversal cost |
-| **MITRE ATT&CK Tags**     | Manually attach T-codes (e.g. T1078.003) to the node                 |
-| **Firewall Enabled**      | Adds 9999 base cost unless source IP is whitelisted                  |
-| **Whitelisted IPs**       | Source IPs that bypass firewall cost (wildcard: `0.0.0.0/0`)         |
-
-Use **📍 Set as Attacker Entry** and **🎯 Set as Target** to pin the simulation endpoints.
-
----
-
-### Step 4 — Select an Attacker Persona
-
-Click the **Attacker Persona** dropdown in the top header (custom themed, not a native select):
-
-| Persona               | Behaviour                                                                       |
-| --------------------- | ------------------------------------------------------------------------------- |
-| **Standard Attacker** | Baseline cost model, no bonuses or penalties                                    |
-| **Script Kiddie**     | Avoids firewalls (+500 extra penalty), aggressively exploits RCE (−99 discount) |
-| **APT Threat Group**  | Treats firewalls as minor obstacles (+50), crushes weak credentials (−80)       |
-
-The same topology yields completely different routes depending on persona.
-
----
-
-### Step 5 — Run the Simulation
-
-Click **⚡ Run Simulation**. The engine:
-
-1. Serialises your canvas into a directed graph with stateful per-edge weights
-2. Runs `nx.shortest_simple_paths` to extract the **top 3 attack routes**
-3. Returns a primary path (lowest cost) + up to 2 alternative lateral-movement paths
-
-On the canvas: **primary path** animates in **red**, alternative paths in **amber/dashed** style.
-
-> If the backend is unreachable, the app falls back to a built-in offline Dijkstra simulation.
-
----
-
-### Step 6 — Read the Risk Report
-
-A **Simulation Report** panel replaces the inspector after simulation:
-
-- **Risk Score** (0–100) with a colour-coded severity badge (Low / Medium / High / Critical)
-- **Path Summary** — ordered compromised node list with hop count
-- **Attack Paths** — primary + alternative routes displayed separately
-- **Contributing Factors** — per-node reasons the attacker succeeded
-- **Recommended Mitigations** — deduplicated, auto-generated remediations:
-  - _Apply critical vendor security patches_ (unpatched or RCE nodes)
-  - _Enforce MFA and password complexity_ (weak credentials)
-  - _Review ACL rules; enforce Zero Trust_ (firewall bypasses)
-  - _Encrypt network links and enable TLS_ (cleartext edges)
-
----
-
-### Step 7 — Download the PDF Report
-
-Click **⬇ Download Risk Report (PDF)** inside the report panel. AegisPath:
-
-1. Captures the live canvas as a high-resolution screenshot via `html2canvas`
-2. Generates a `jsPDF` document with: report header, date, selected persona, risk score, canvas image, contributing factors, and remediations
-3. Saves as `AegisPath_Threat_Report.pdf`
-
----
-
-### Step 8 — Save & Load Topologies
-
-Use **Export JSON** and **Import JSON** in the sidebar footer. The exported file captures all nodes, edges, positions, and configurations exactly.
-
----
-
-### Step 9 — Guided Onboarding Tour
-
-Click **View Tour** in the header (or it auto-runs on first visit) to launch a themed tooltip walkthrough covering:
-
-- Component Library → Canvas → Node Inspector → Run Simulation
-
-The tour auto-saves its completion state to `localStorage` so it only auto-plays once per browser session.
-
----
-
-## Simulation Workflow
-
-| Step | Action                                                                                         |
-| ---- | ---------------------------------------------------------------------------------------------- |
-| 1    | **Design** — drag Firewalls, Servers, Workstations from the sidebar onto the canvas            |
-| 2    | **Connect** — draw directed edges between nodes to define network links                        |
-| 3    | **Configure** — click each node to set CVSS scores, vulnerability flags, and entry/target pins |
-| 4    | **Select Persona** — choose Standard, Script Kiddie, or APT from the header dropdown           |
-| 5    | **Simulate** — click **Run Simulation**; backend computes multi-path analysis                  |
-| 6    | **Watch** — nodes animate hop-by-hop: amber (analysing) → red (compromised)                    |
-| 7    | **Analyse** — Risk Report shows score, severity, contributing factors, and mitigations         |
-| 8    | **Export** — download the PDF report or save the topology as JSON                              |
+1. **Graph construction** — nodes and bidirectional edges are loaded into a `networkx.DiGraph` with dynamically computed per-edge weights.
+2. **Weight calculation** — each edge weight is computed from CVSS score, firewall IP rules, open-port overlap, patch status, and persona modifiers.
+3. **Pin resolution** — `is_attacker_entry` and `is_target_asset` flags resolve the start/end of the pathfinding problem; falls back to `nodes[0]` / `nodes[-1]` if not set.
+4. **Multi-path analysis** — `nx.shortest_simple_paths(weight='weight')` returns the **top 3 lowest-cost routes**. The primary path (index 0) is the most dangerous.
+5. **Risk scoring** — the primary path is traversed and a 0–100 score is accumulated based on node types, CVSS severity, vulnerability flags, and cleartext edges.
+6. **ATT&CK annotation** — each hop is mapped to MITRE ATT&CK techniques based on its config; technique badges appear in the simulation report.
+7. **Remediation mapping** — every risk factor on a compromised node generates a specific mitigation; results are deduplicated before being returned.
 
 ---
 
 ## Attacker Personas
 
-| Persona              | Firewall cost | RCE discount | Weak creds discount |
-| -------------------- | ------------- | ------------ | ------------------- |
-| **Standard**         | +9999 (base)  | —            | —                   |
-| **Script Kiddie**    | +10499 (+500) | **−99**      | —                   |
-| **APT Threat Group** | +10049 (+50)  | —            | **−80**             |
+| Persona | Firewall penalty | RCE bonus | Weak-creds bonus |
+|---|---|---|---|
+| Standard | +9 999 | — | — |
+| Script Kiddie | +10 499 | **−99** | — |
+| APT Threat Group | +10 049 | — | **−80** |
 
-Persona selection causes `nx.shortest_simple_paths` to route through _physically different paths_ on the canvas.
+The same topology routes through physically different nodes depending on persona.
 
 ---
 
-## Risk Scoring
+## Risk Score Reference
 
-| Event                               | Score Added |
-| ----------------------------------- | ----------- |
-| Node traversed (firewall)           | +10         |
-| Node traversed (server/workstation) | +20         |
-| CVSS score present                  | +(cvss × 5) |
-| RCE vulnerability                   | +30         |
-| Weak credentials                    | +15         |
-| Unpatched node                      | +10         |
-| Cleartext edge traversed            | +15         |
+| Event | Points |
+|---|---|
+| Firewall traversed | +10 |
+| Server / workstation traversed | +20 |
+| CVSS score present | +(cvss × 5) |
+| RCE vulnerability | +30 |
+| Weak credentials | +15 |
+| Unpatched node | +10 |
+| Cleartext edge | +15 |
 
 Score is clamped to **0–100**.
 
@@ -290,8 +144,8 @@ Score is clamped to **0–100**.
 
 ## Detailed Documentation
 
-- [Backend README](./backend/README.md)
-- [Frontend README](./frontend/README.md)
+- [Backend README](./backend/README.md) — API reference, node config fields, engine internals, ATT&CK mapping
+- [Frontend README](./frontend/README.md) — component structure, design system, feature breakdown
 
 ---
 

@@ -1,119 +1,92 @@
-# AegisPath — Frontend Dashboard
+# AegisPath — Frontend
 
-> React + Vite interactive threat topology canvas for AegisPath.
-
----
-
-## Overview
-
-The frontend is a single-page application (SPA) built with React 18 and Vite. It provides a professional cybersecurity command-center interface for building network topologies, running threat simulations, and analyzing risk reports — all in real time.
-
----
-
-## Project Structure
-
-```text
-frontend/
-├── public/
-├── src/
-│   ├── App.jsx           # Root component: state, DnD, simulation, animation orchestration
-│   ├── App.css           # Blank — all styles live in index.css
-│   ├── components/
-│   │   ├── Canvas.jsx    # ReactFlow canvas wrapper (nodes, edges, minimap, controls)
-│   │   ├── Inspector.jsx # Live interactive node configuration editor
-│   │   └── Sidebar.jsx   # Threat components list, active simulation summaries, JSON actions
-│   │   └── index.css     # Full enterprise design system (CSS variables, layout, components)
-│   └── main.jsx          # React entry point
-├── index.html
-├── package.json
-├── README.md
-└── vite.config.js
-```
+React 18 + Vite single-page app. Drag-and-drop network topology builder, live simulation canvas, and risk reporting dashboard.
 
 ---
 
 ## Setup
 
 ```bash
-# Install dependencies
 npm install
+npm run dev      # http://localhost:5173
+npm run build    # production → dist/
+```
 
-# Start development server
-npm run dev
-# → http://localhost:5173
-
-# Production build
-npm run build
-# → dist/
+`.env`
+```env
+VITE_API_URL=http://127.0.0.1:8000
 ```
 
 ---
 
-## Key Features
+## Project Structure
 
-### Interactive Canvas
+```
+src/
+├── App.jsx              # Root: state, simulation, animation, PDF export
+├── index.css            # Design system (CSS variables, glass UI, animations)
+└── components/
+    ├── Canvas.jsx        # ReactFlow canvas — nodes, edges, minimap, controls
+    ├── Inspector.jsx     # Node config editor — CVE lookup, ATT&CK tags, validation
+    ├── Sidebar.jsx       # Component palette, simulation summary, JSON import/export
+    └── OnboardingTour.jsx # Guided walkthrough (React Joyride)
+```
 
-- Built on **ReactFlow** with a dot-grid background, pan/zoom controls, and a minimap.
-- Edge connections are drawn by dragging from a node handle to another node.
-- Clicking the background deselects the active node.
+---
 
-### Drag-and-Drop Component Library
+## Features
 
-- Three draggable palette items: **Firewall Guard**, **Enterprise Server**, **User Workstation**.
-- On drop, a new node is instantiated with a default config and positioned precisely at the cursor using `reactFlowInstance.project()`.
+### Canvas
+Built on **ReactFlow** with a dot-grid background, pan/zoom controls, and a minimap. Edges are drawn by dragging between node handles. Clicking the background deselects the active node.
+
+### Component Library (Sidebar)
+Seven draggable node types: **Firewall**, **Server**, **Workstation**, **Router**, **Database**, **Load Balancer**, **Cloud**. Nodes are instantiated with a default config and placed precisely at the cursor. The sidebar also shows the active persona card, live breach warnings from the last simulation, and JSON import/export actions.
 
 ### Attacker Persona Selector
+Dropdown in the header: **Standard**, **Script Kiddie**, **APT Threat Group**. The persona is embedded in the simulation payload and shifts the backend's Dijkstra traversal costs, causing the engine to route through physically different paths.
 
-- Dropdown in the header with three options: **Standard**, **Script Kiddie**, **APT Threat Group**.
-- The selected persona is embedded in the simulation payload and passed to the backend engine, which shifts traversal costs and re-routes the Dijkstra path accordingly.
-- A compact **persona card** in the sidebar shows the active selection with icon and description.
+### Node Inspector
+Right panel opens on node click. Editable fields with live validation:
+- **IP Address** — validated against IPv4/CIDR format on blur
+- **CVSS Score** — slider + text input, clamped 0.0–10.0
+- **CVE Lookup** — paste a CVE ID, blur to auto-fetch score and description from NIST NVD
+- **Vulnerability flags** — Has RCE, Has Weak Credentials, Is Patched
+- **MITRE ATT&CK Tags** — add/remove T-codes manually (e.g. `T1190`, `T1078.003`); persisted in JSON export
+- **Entry / Target pins** — mark nodes as attacker entry point or high-value target
+- **Open ports** — comma-separated list, validated as integers 1–65535
+- **Allowed IPs** — firewall whitelist (IPv4 or CIDR)
+- **Custom properties** — arbitrary key/value pairs, add or delete freely
 
-### Sequential Animation Engine
+### Hop Animation
+On simulation completion, nodes animate sequentially along the computed path: amber pulse (analysing, 400ms) → red lock (compromised) → edge turns red and animates. A 700ms pause separates each hop. Canvas resets before every new run.
 
-- On simulation completion, nodes animate **sequentially** along the computed path:
-  1. Node pulses **amber** (analyzing phase — 400ms)
-  2. Node locks to **red** (compromised) with a glow shadow
-  3. The connecting edge turns red and animates
-  4. 700ms pause before the next hop
-- The canvas **resets styles** before each new simulation run.
+### Risk Report Panel
+Slides up after simulation completes. Shows:
+- Risk score (0–100) with severity badge (Low / Moderate / High / Critical)
+- Active persona and hop count
+- Ordered list of compromised nodes
+- Primary + alternative attack paths
+- MITRE ATT&CK technique badges (linked to attack.mitre.org)
+- Contributing risk factors per node
+- Actionable mitigations
 
-### Risk Assessment Report
+### PDF Export
+Hides side panels, captures the canvas via `html2canvas`, and generates an A4 PDF via `jsPDF` containing the report header, date, persona, risk score, canvas screenshot, factors, and mitigations. Restores the UI seamlessly after download.
 
-- Slides up from the bottom-right of the canvas after simulation completes.
-- Displays: numerical **risk score** (0–100), **severity label** (MODERATE / HIGH / CRITICAL) color-coded by threshold, **hop count**, active persona, a bulleted list of **contributing risk factors**, and a green/emerald themed list of **actionable mitigations** mapped from the backend engine.
-- Includes a **Download Risk Report (PDF)** button at the bottom of the card.
-
-### Node Inspector & Live Configuration Editor
-
-- Right panel auto-opens when any node is clicked.
-- Replaces read-only static text with **interactive HTML form controls**:
-  - **Attacker Entry Point & High-Value Target**: Checkbox pins to customize attack solver pathing route.
-  - **IP Address**: Text input editor for node connectivity configuration.
-  - **CVSS Score**: Drag range slider (0.0 to 10.0) with real-time numeric indicator value next to it (hidden for firewalls).
-  - **Security Flags**: Checkbox selectors for "Is Patched" and "Has RCE Vulnerability" (hidden for firewalls).
-- Displays remaining system configurations (ports, whitelist rules, OS) under a read-only "System Specs" segment.
-- Features a **Simulation Status Badge** specifying whether the node was breached in the path (showing the breach order index).
-
-### Sidebar & JSON Operations
-
-- Left panel displays:
-  - **Drag Palette**: Instantiates pre-configured network components onto the canvas.
-  - **Attacker Persona**: Explains the selected threat actor model strategy.
-  - **Active Simulations**: Shows the sequential hop trace path, and highlights a list of **breach warning cards** mapping contributing factors with Lucide `AlertTriangle` warning icons.
-  - **JSON Tools**: Actions to **Export JSON** (download current workspace node/edge properties) and **Import JSON** (load JSON file via file selector and parse via `FileReader`).
-
-### Enterprise PDF Exporter
-
-- Orchestrated by `html2canvas` and `jspdf` packages.
-- When generating reports, it hides side panes to isolate the workspace canvas, captures the diagram, constructs an A4 report with customized headers, appends risk assessments, lists mitigations, downloads `AegisPath_Threat_Report.pdf`, and restores overlays seamlessly.
+### JSON Import / Export
+**Export** — downloads all nodes, edges, positions, and full config as a JSON file. **Import** — loads a JSON file via `FileReader` and restores the full topology exactly, including all config fields and ATT&CK tags.
 
 ### Status Bar
+Live simulation state in the header: Idle (node/edge count) · Running (animated amber dot) · Complete (green dot + hop count) · Error (offline indicator).
 
-- Center of the header shows live simulation state:
-  - Idle: node/edge count
-  - Running: animated amber dot
-  - Complete: green dot + hop count
-  - Error/Offline: offline mode indicator
+### Onboarding Tour
+First-time visitors get a guided tooltip walkthrough (React Joyride) covering the Component Library, Canvas, Inspector, and Simulation controls. Completion is persisted to `localStorage`. Replayable anytime via **View Tour** in the header.
+
+---
+
+## Backend Integration
+
+Posts to `VITE_API_URL/api/simulate`. If the backend is unreachable, the app enters offline mode and displays a warning in the sidebar. To change the URL, update the `VITE_API_URL` env variable.
 
 ---
 
@@ -121,21 +94,13 @@ npm run build
 
 All styles are authored as vanilla CSS in `src/index.css`.
 
-| Token            | Value                                                       |
-| ---------------- | ----------------------------------------------------------- |
-| Font (UI)        | Inter                                                       |
-| Font (Code/Mono) | JetBrains Mono                                              |
-| Background       | `#080a0f` / `#0d1017` / `#141820`                           |
-| Accent Rose      | `#f43f5e`                                                   |
-| Accent Indigo    | `#6366f1`                                                   |
-| Accent Emerald   | `#10b981`                                                   |
-| Accent Amber     | `#f59e0b`                                                   |
-| Glass background | `rgba(13, 16, 23, 0.82)` with `backdrop-filter: blur(20px)` |
-
----
-
-## Backend Integration
-
-The frontend posts to `http://127.0.0.1:8000/api/simulate`. If the backend is unreachable, it falls back to an offline mode with a dummy two-node path and displays an offline warning in the sidebar.
-
-To change the backend URL, update the `fetch()` call in `App.jsx → handleRunSimulation`.
+| Token | Value |
+|---|---|
+| Font (UI) | Inter |
+| Font (Mono) | JetBrains Mono |
+| Background | `#080a0f` / `#0d1017` / `#141820` |
+| Accent Rose | `#f43f5e` |
+| Accent Indigo | `#6366f1` |
+| Accent Emerald | `#10b981` |
+| Accent Amber | `#f59e0b` |
+| Glass | `rgba(13,16,23,0.82)` + `backdrop-filter: blur(20px)` |
