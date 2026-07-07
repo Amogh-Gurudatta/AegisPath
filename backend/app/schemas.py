@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 
 class NodeModel(BaseModel):
@@ -55,3 +55,15 @@ class SimulationResponse(BaseModel):
         []
     )  # unique techniques for primary path
     primary_hop_techniques: List[List[Dict[str, Any]]] = []  # per-hop breakdown
+
+
+class EnrichCveRequest(BaseModel):
+    cve_id: str = Field(..., description="CVE identifier, e.g. CVE-2021-44228")
+    description: str = Field(..., description="CVE description text from NVD")
+
+
+class EnrichCveResponse(BaseModel):
+    has_rce_vulnerability: Optional[bool] = None
+    has_weak_credentials: Optional[bool] = None
+    requires_network_access: Optional[bool] = None
+    enrichment_error: Optional[str] = None

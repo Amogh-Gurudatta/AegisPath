@@ -142,6 +142,10 @@ export default function Inspector({
   const [cveError, setCveError] = useState(null);
   const [cveSummary, setCveSummary] = useState(null);
 
+  // LLM enrichment state (fires after CVE lookup)
+  const [enrichLoading, setEnrichLoading] = useState(false);
+  const [enrichError, setEnrichError] = useState(null);
+
   // ATT&CK manual tag state
   const [techniqueInput, setTechniqueInput] = useState("");
 
@@ -162,6 +166,8 @@ export default function Inspector({
     setCveInput(selectedNode.config?.cve_id || "");
     setCveError(null);
     setCveSummary(null);
+    setEnrichLoading(false);
+    setEnrichError(null);
     setErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNode?.id]);
@@ -1098,7 +1104,7 @@ export default function Inspector({
                     
                     updateNodeConfig(selectedNode.id, configUpdate);
                     
-                    setCveSummary({
+                    const summaryObj = {
                       score,
                       severity: metric?.cvssData?.baseSeverity,
                       version: m31 ? "3.1" : m30 ? "3.0" : "2.0",
@@ -1106,7 +1112,64 @@ export default function Inspector({
                         desc.length > 160 ? desc.slice(0, 160) + "…" : desc,
                       epssScore,
                       epssPercentile
-                    });
+                    };
+                    setCveSummary(summaryObj);
+
+                    // ── LLM enrichment step ──────────────────────────────
+                    if (desc) {
+                      const nodeIdAtEnrich = selectedNode.id;
+                      setEnrichLoading(true);
+                      setEnrichError(null);
+
+                      const apiUrl =
+                        import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+                      (async () => {
+                        try {
+                          const enrichRes = await fetch(
+                            `${apiUrl}/api/enrich-cve`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                cve_id: id,
+                                description: desc,
+                              }),
+                            },
+                          );
+                          if (!enrichRes.ok)
+                            throw new Error(`Enrich responded ${enrichRes.status}`);
+                          const enrichData = await enrichRes.json();
+
+                          if (enrichData.enrichment_error) {
+                            setEnrichError(
+                              "couldn't auto-infer flags — set manually",
+                            );
+                            return;
+                          }
+
+                          const flagUpdate = {};
+                          if (enrichData.has_rce_vulnerability !== null)
+                            flagUpdate.has_rce_vulnerability =
+                              enrichData.has_rce_vulnerability;
+                          if (enrichData.has_weak_credentials !== null)
+                            flagUpdate.has_weak_credentials =
+                              enrichData.has_weak_credentials;
+                          if (enrichData.requires_network_access !== null)
+                            flagUpdate.requires_network_access =
+                              enrichData.requires_network_access;
+
+                          if (Object.keys(flagUpdate).length > 0)
+                            updateNodeConfig(nodeIdAtEnrich, flagUpdate);
+                        } catch {
+                          setEnrichError(
+                            "couldn't auto-infer flags — set manually",
+                          );
+                        } finally {
+                          setEnrichLoading(false);
+                        }
+                      })();
+                    }
                   } catch (err) {
                     setCveError(err.message || "Lookup failed");
                   } finally {
@@ -1238,6 +1301,75 @@ export default function Inspector({
                     ✓ CVSS auto-filled
                   </span>
                 </div>
+                {/* Enrichment status row */}
+                {(enrichLoading || enrichError) && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      marginTop: "5px",
+                    }}
+                  >
+                    {enrichLoading && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          color: "var(--text-muted)",
+                        }}
+                      >
+                        ⏳ Inferring flags via LLM…
+                      </span>
+                    )}
+                    {enrichError && !enrichLoading && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          color: "var(--accent-amber)",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        ⚠ {enrichError}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {!enrichLoading && !enrichError && cveSummary && (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "5px",
+                      marginTop: "5px",
+                    }}
+                  >
+                    {["has_rce_vulnerability", "has_weak_credentials", "requires_network_access"].map((flag) => {
+                      const val = selectedNode?.config?.[flag];
+                      if (val === undefined || val === null) return null;
+                      return (
+                        <span
+                          key={flag}
+                          style={{
+                            background: val
+                              ? "rgba(244,63,94,0.12)"
+                              : "rgba(16,185,129,0.10)",
+                            border: `1px solid ${val ? "rgba(244,63,94,0.35)" : "rgba(16,185,129,0.3)"}`,
+                            color: val
+                              ? "var(--accent-rose)"
+                              : "var(--accent-emerald)",
+                            borderRadius: "4px",
+                            padding: "2px 6px",
+                            fontSize: "10.5px",
+                            fontFamily: "var(--font-mono)",
+                          }}
+                        >
+                          {val ? "✔" : "✘"}{" "}
+                          {flag.replace(/_/g, " ")}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
                 <p
                   style={{
                     margin: 0,

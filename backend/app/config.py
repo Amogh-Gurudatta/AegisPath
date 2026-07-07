@@ -38,3 +38,5 @@ CORS_ORIGINS = [
     ).split(",")
     if origin.strip()
 ]
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
