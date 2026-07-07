@@ -14,6 +14,7 @@ import {
   Database,
   GitMerge,
   Cloud,
+  Globe,
 } from "lucide-react";
 
 export default function Sidebar({
@@ -74,6 +75,13 @@ export default function Sidebar({
           <h4 className="section-label">Drag to Canvas</h4>
           <div className="node-palette-list">
             {[
+              {
+                type: "internet",
+                label: "External Internet",
+                sub: "Untrusted entry point / WAN",
+                cls: "palette-icon-internet",
+                Icon: Globe,
+              },
               {
                 type: "firewall",
                 label: "Firewall Guard",
