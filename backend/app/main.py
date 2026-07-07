@@ -3,7 +3,12 @@ import asyncio
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.schemas import NetworkGraph, SimulationResponse, EnrichCveRequest, EnrichCveResponse
+from app.schemas import (
+    NetworkGraph,
+    SimulationResponse,
+    EnrichCveRequest,
+    EnrichCveResponse,
+)
 from app.engine import compute_attack_path
 from app.config import CORS_ORIGINS, GROQ_API_KEY
 
@@ -115,9 +120,13 @@ async def enrich_cve(req: EnrichCveRequest):
                 return None
 
             return EnrichCveResponse(
-                has_rce_vulnerability=to_bool_or_none(flags.get("has_rce_vulnerability")),
+                has_rce_vulnerability=to_bool_or_none(
+                    flags.get("has_rce_vulnerability")
+                ),
                 has_weak_credentials=to_bool_or_none(flags.get("has_weak_credentials")),
-                requires_network_access=to_bool_or_none(flags.get("requires_network_access")),
+                requires_network_access=to_bool_or_none(
+                    flags.get("requires_network_access")
+                ),
             )
 
         except httpx.HTTPStatusError as exc:

@@ -440,18 +440,19 @@ export default function App() {
         data: { label: labelMap[type] || "Network Node" },
         style: getNodeStyle(type, type === "internet"),
         nodeType: type,
-        config: type === "internet"
-          ? {
-              ip_address: "0.0.0.0",
-              description: "External attacker entry point",
-            }
-          : {
-              ip_address: `10.0.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 254) + 1}`,
-              is_patched: false,
-              has_rce_vulnerability: false,
-              has_weak_credentials: false,
-              cvss_score: 0,
-            },
+        config:
+          type === "internet"
+            ? {
+                ip_address: "0.0.0.0",
+                description: "External attacker entry point",
+              }
+            : {
+                ip_address: `10.0.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 254) + 1}`,
+                is_patched: false,
+                has_rce_vulnerability: false,
+                has_weak_credentials: false,
+                cvss_score: 0,
+              },
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -914,11 +915,17 @@ export default function App() {
           />
           <span className="status-label">
             {simulationStatus === "running"
-              ? (isWakingUp ? "Waking up backend…" : "Simulation Running…")
+              ? isWakingUp
+                ? "Waking up backend…"
+                : "Simulation Running…"
               : simulationStatus === "complete"
                 ? `Attack Path Resolved · ${primaryPath.length} Hops`
                 : simulationStatus === "error"
-                  ? (error ? (error.includes("Failed to fetch") ? "Backend Offline (Failed to fetch)" : error) : "Simulation Error")
+                  ? error
+                    ? error.includes("Failed to fetch")
+                      ? "Backend Offline (Failed to fetch)"
+                      : error
+                    : "Simulation Error"
                   : `${nodes.length} Nodes · ${edges.length} Edges`}
           </span>
         </div>
@@ -1148,7 +1155,13 @@ export default function App() {
             ) : (
               <Play size={16} />
             )}
-            <span>{loading ? (isWakingUp ? "Waking up…" : "Simulating…") : "Run Simulation"}</span>
+            <span>
+              {loading
+                ? isWakingUp
+                  ? "Waking up…"
+                  : "Simulating…"
+                : "Run Simulation"}
+            </span>
           </button>
         </div>
       </header>

@@ -12,10 +12,10 @@
 
 ## Live Deployment
 
-| | URL |
-|---|---|
-| **App** | https://aegis-path-phi.vercel.app/ |
-| **API** | https://aegispath-production.up.railway.app |
+|             | URL                                              |
+| ----------- | ------------------------------------------------ |
+| **App**     | https://aegis-path-phi.vercel.app/               |
+| **API**     | https://aegispath-production.up.railway.app      |
 | **Swagger** | https://aegispath-production.up.railway.app/docs |
 
 ---
@@ -59,11 +59,11 @@ AegisPath/
 
 ## Stack
 
-| Layer | Tech |
-|---|---|
-| Backend | Python · FastAPI · NetworkX |
-| Frontend | React 18 · Vite · ReactFlow |
-| Styling | Vanilla CSS (custom design system) |
+| Layer    | Tech                               |
+| -------- | ---------------------------------- |
+| Backend  | Python · FastAPI · NetworkX        |
+| Frontend | React 18 · Vite · ReactFlow        |
+| Styling  | Vanilla CSS (custom design system) |
 
 ---
 
@@ -72,6 +72,7 @@ AegisPath/
 > **No setup needed** to try it — the live app is at https://aegis-path-phi.vercel.app/
 
 **Backend**
+
 ```bash
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
@@ -81,6 +82,7 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 **Frontend**
+
 ```bash
 cd frontend
 npm install
@@ -90,13 +92,16 @@ npm run dev        # http://localhost:5173
 **Environment files**
 
 `backend/.env`
+
 ```env
 PORT=8000
 HOST=127.0.0.1
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 GROQ_API_KEY=          # get a free key at console.groq.com
 ```
+
 `frontend/.env`
+
 ```env
 VITE_API_URL=http://127.0.0.1:8000
 ```
@@ -117,11 +122,11 @@ VITE_API_URL=http://127.0.0.1:8000
 
 ## Attacker Personas
 
-| Persona | Firewall penalty | RCE bonus | Weak-creds bonus |
-|---|---|---|---|
-| Standard | +9 999 | — | — |
-| Script Kiddie | +10 499 | **−99** | — |
-| APT Threat Group | +10 049 | — | **−80** |
+| Persona          | Firewall penalty | RCE bonus | Weak-creds bonus |
+| ---------------- | ---------------- | --------- | ---------------- |
+| Standard         | +9 999           | —         | —                |
+| Script Kiddie    | +10 499          | **−99**   | —                |
+| APT Threat Group | +10 049          | —         | **−80**          |
 
 The same topology routes through physically different nodes depending on persona.
 
@@ -129,15 +134,15 @@ The same topology routes through physically different nodes depending on persona
 
 ## Risk Score Reference
 
-| Event | Points |
-|---|---|
-| Firewall traversed | +10 |
-| Server / workstation traversed | +20 |
-| CVSS score present | +(cvss × 5) × EPSS multiplier |
-| RCE vulnerability | +30 |
-| Weak credentials | +15 |
-| Unpatched node | +10 |
-| Cleartext edge | +15 |
+| Event                          | Points                        |
+| ------------------------------ | ----------------------------- |
+| Firewall traversed             | +10                           |
+| Server / workstation traversed | +20                           |
+| CVSS score present             | +(cvss × 5) × EPSS multiplier |
+| RCE vulnerability              | +30                           |
+| Weak credentials               | +15                           |
+| Unpatched node                 | +10                           |
+| Cleartext edge                 | +15                           |
 
 Score is clamped to **0–100**.
 

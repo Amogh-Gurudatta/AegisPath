@@ -201,7 +201,7 @@ def calculate_traversal_cost(
         cost = 100
         cvss_score = tgt_config.get("cvss_score")
         epss_score = tgt_config.get("epss_score", 0.0)
-        
+
         if cvss_score is not None:
             multiplier = 0.5 + (float(epss_score) * 2.0)
             cost -= float(cvss_score) * 8 * multiplier
@@ -401,7 +401,7 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
                     epss_val = float(epss) if epss is not None else 0.0
                     multiplier = 0.5 + (epss_val * 2.0)
                     risk_score += (cvss_val * 5.0) * multiplier
-                    
+
                     if cvss_val >= 7.0:
                         if epss_val > 0.8:
                             contributing_factors.append(
