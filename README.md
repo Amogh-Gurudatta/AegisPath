@@ -25,7 +25,7 @@
 Security engineers use AegisPath to model a real network topology, simulate how an attacker would move through it, and get a concrete risk report — rather than guessing on a whiteboard.
 
 1. **Drag nodes** — Firewall, Server, Workstation, Router, Database, Load Balancer, or Cloud — onto the canvas and connect them.
-2. **Configure each node** — IP address, CVSS score, open ports, vulnerability flags. Paste a real CVE ID to auto-fetch its CVSS score from NIST NVD and EPSS exploit probability from FIRST.
+2. **Configure each node** — IP address, CVSS score, open ports, vulnerability flags. Paste a real CVE ID to simultaneously fetch CVSS from NIST NVD, EPSS probability from FIRST, and auto-infer `has_rce_vulnerability` / `has_weak_credentials` / `requires_network_access` via the Groq LLM.
 3. **Pin entry & target** — mark which node is the attacker's starting point and which is the high-value goal.
 4. **Pick a persona** — Standard, Script Kiddie, or APT. The same topology produces measurably different routes depending on the attacker model.
 5. **Run the simulation** — the backend computes the top 3 attack routes and animates them hop-by-hop on the canvas.
@@ -94,6 +94,7 @@ npm run dev        # http://localhost:5173
 PORT=8000
 HOST=127.0.0.1
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+GROQ_API_KEY=          # get a free key at console.groq.com
 ```
 `frontend/.env`
 ```env

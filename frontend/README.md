@@ -49,8 +49,11 @@ Dropdown in the header: **Standard**, **Script Kiddie**, **APT Threat Group**. T
 Right panel opens on node click. Editable fields with live validation:
 - **IP Address** — validated against IPv4/CIDR format on blur
 - **CVSS Score** — slider + text input, clamped 0.0–10.0
-- **CVE Lookup** — paste a CVE ID, blur to auto-fetch score and description from NIST NVD
-- **Vulnerability flags** — Has RCE, Has Weak Credentials, Is Patched
+- **CVE Lookup** — paste a CVE ID, blur to simultaneously:
+  - fetch CVSS score + description from **NIST NVD**
+  - fetch exploit probability (EPSS) from **FIRST**
+  - call `/api/enrich-cve` on the backend which asks the Groq LLM to infer `has_rce_vulnerability`, `has_weak_credentials`, and `requires_network_access` from the description; if inference succeeds the flags are auto-filled and shown as coloured badges — user can override any flag manually afterward
+- **Vulnerability flags** — Has RCE, Has Weak Credentials, Requires Network Access, Is Patched
 - **MITRE ATT&CK Tags** — add/remove T-codes manually (e.g. `T1190`, `T1078.003`); persisted in JSON export
 - **Entry / Target pins** — mark nodes as attacker entry point or high-value target
 - **Open ports** — comma-separated list, validated as integers 1–65535
@@ -86,7 +89,7 @@ First-time visitors get a guided tooltip walkthrough (React Joyride) covering th
 
 ## Backend Integration
 
-Posts to `VITE_API_URL/api/simulate`. If the backend is unreachable, the app enters offline mode and displays a warning in the sidebar. To change the URL, update the `VITE_API_URL` env variable.
+Posts to `VITE_API_URL/api/simulate` for simulations and `VITE_API_URL/api/enrich-cve` for LLM flag inference after a CVE lookup. If the backend is unreachable, the app enters offline mode and displays a warning in the sidebar. To change the URL, update the `VITE_API_URL` env variable.
 
 ---
 

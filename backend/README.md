@@ -26,6 +26,7 @@ uvicorn app.main:app --reload --port 8000
 PORT=8000
 HOST=127.0.0.1
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+GROQ_API_KEY=          # required for /api/enrich-cve; get a free key at console.groq.com
 ```
 
 ---
@@ -36,9 +37,10 @@ CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 backend/
 ├── app/
 │   ├── engine.py    # Cost model, Dijkstra, risk scoring, ATT&CK annotation
-│   ├── main.py      # FastAPI routes + CORS
-│   └── schemas.py   # Pydantic request/response models
-└── requirements.txt
+│   ├── main.py      # FastAPI routes + CORS; includes /api/enrich-cve (Groq)
+│   ├── config.py    # Env var loading: CORS_ORIGINS, GROQ_API_KEY
+│   └── schemas.py   # Pydantic models: NetworkGraph, SimulationResponse, EnrichCveRequest/Response
+└── requirements.txt   # fastapi, uvicorn, networkx, pydantic, httpx
 ```
 
 ---
@@ -104,6 +106,7 @@ backend/
 | `open_ports` | `list[int]` | Shared ports lower traversal cost to adjacent nodes |
 | `cvss_score` | `float 0–10` | Higher score = lower traversal cost = more attractive target |
 | `epss_score` | `float 0–1` | Scales traversal cost and amplifies CVSS risk score impact |
+| `requires_network_access` | `bool` | Informational flag auto-inferred by LLM enrichment; not used in cost model yet |
 | `cve_id` | `str` | Stored in config; displayed in inspector and PDF report |
 | `has_rce_vulnerability` | `bool` | −99 traversal cost for Script Kiddie persona |
 | `has_weak_credentials` | `bool` | −80 traversal cost for APT persona |
