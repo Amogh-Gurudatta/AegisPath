@@ -149,6 +149,42 @@ export default function Inspector({
   // ATT&CK manual tag state
   const [techniqueInput, setTechniqueInput] = useState("");
 
+  // --- Resizing state and logic ---
+  const [width, setWidth] = useState(320);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = React.useCallback((mouseDownEvent) => {
+    mouseDownEvent.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = React.useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = React.useCallback(
+    (mouseMoveEvent) => {
+      if (isResizing) {
+        const newWidth = window.innerWidth - mouseMoveEvent.clientX;
+        if (newWidth >= 280 && newWidth <= 650) {
+          setWidth(newWidth);
+        }
+      }
+    },
+    [isResizing]
+  );
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", resize);
+      window.addEventListener("mouseup", stopResizing);
+    }
+    return () => {
+      window.removeEventListener("mousemove", resize);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
+
   // Sync local state whenever the selected node changes
   useEffect(() => {
     if (!selectedNode) return;
@@ -1628,7 +1664,36 @@ export default function Inspector({
   return (
     <aside
       className={`inspector inspector-panel ${isInspectorOpen ? "" : "collapsed"}`}
+      style={{
+        width: isInspectorOpen ? `${width}px` : 0,
+        minWidth: isInspectorOpen ? `${width}px` : 0,
+        transition: isResizing ? "none" : undefined,
+        position: "relative",
+      }}
     >
+      {/* Resize handle */}
+      {isInspectorOpen && (
+        <div
+          onMouseDown={startResizing}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "4px",
+            height: "100%",
+            cursor: "ew-resize",
+            zIndex: 100,
+            background: isResizing ? "var(--accent-indigo)" : "transparent",
+            transition: "background 0.15s",
+          }}
+          onMouseEnter={(e) => {
+            if (!isResizing) e.currentTarget.style.background = "rgba(99, 102, 241, 0.25)";
+          }}
+          onMouseLeave={(e) => {
+            if (!isResizing) e.currentTarget.style.background = "transparent";
+          }}
+        />
+      )}
       <div className="inspector-header">
         <h3 className="inspector-title">{title}</h3>
         <button
