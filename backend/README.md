@@ -86,10 +86,10 @@ backend/
 ## Engine Internals
 
 1. **Graph construction** — all nodes and bidirectional edges are added to a `networkx.DiGraph` with dynamically computed per-edge weights.
-2. **Weight calculation** (`calculate_traversal_cost`) — edge weight per source→target pair incorporates CVSS scores, firewall IP whitelists, open-port overlap, patch status, and persona modifiers.
+2. **Weight calculation** (`calculate_traversal_cost`) — edge weight per source→target pair incorporates CVSS scores, EPSS probabilities, firewall IP whitelists, open-port overlap, patch status, and persona modifiers.
 3. **Pin resolution** — reads `is_attacker_entry` / `is_target_asset` flags to resolve pathfinding endpoints; falls back to `nodes[0]` / `nodes[-1]` if neither is set.
 4. **Multi-path analysis** — `nx.shortest_simple_paths(weight='weight')` + `itertools.islice(..., 3)` extracts the **top 3 lowest-cost attack paths**. The primary path (index 0) is the most dangerous route.
-5. **Risk scoring** — traverses the primary path, accumulating a 0–100 clamped score from node types, CVSS severity, vulnerability flags, and cleartext edges.
+5. **Risk scoring** — traverses the primary path, accumulating a 0–100 clamped score from node types, CVSS severity dynamically scaled by EPSS probability, vulnerability flags, and cleartext edges.
 6. **ATT&CK annotation** — each hop is mapped to MITRE ATT&CK techniques via `annotate_hop_techniques()`; unique techniques for the primary path are returned in `attack_path_techniques`.
 7. **Remediation mapping** — every risk factor found on a compromised node generates a mitigation string; results are deduplicated before being returned in `recommended_actions`.
 
@@ -103,6 +103,7 @@ backend/
 | `allowed_ips` | `list[str]` | *(Firewall)* IPs that bypass the wall; `0.0.0.0/0` = allow all |
 | `open_ports` | `list[int]` | Shared ports lower traversal cost to adjacent nodes |
 | `cvss_score` | `float 0–10` | Higher score = lower traversal cost = more attractive target |
+| `epss_score` | `float 0–1` | Scales traversal cost and amplifies CVSS risk score impact |
 | `cve_id` | `str` | Stored in config; displayed in inspector and PDF report |
 | `has_rce_vulnerability` | `bool` | −99 traversal cost for Script Kiddie persona |
 | `has_weak_credentials` | `bool` | −80 traversal cost for APT persona |
@@ -134,7 +135,7 @@ The same topology routes through physically different nodes depending on the sel
 |---|---|
 | Firewall traversed | +10 |
 | Server / workstation traversed | +20 |
-| CVSS score present | +(cvss × 5) |
+| CVSS score present | +(cvss × 5) × EPSS multiplier |
 | RCE vulnerability | +30 |
 | Weak credentials | +15 |
 | Unpatched node | +10 |

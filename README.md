@@ -25,7 +25,7 @@
 Security engineers use AegisPath to model a real network topology, simulate how an attacker would move through it, and get a concrete risk report — rather than guessing on a whiteboard.
 
 1. **Drag nodes** — Firewall, Server, Workstation, Router, Database, Load Balancer, or Cloud — onto the canvas and connect them.
-2. **Configure each node** — IP address, CVSS score, open ports, vulnerability flags. Paste a real CVE ID to auto-fetch its score from NIST NVD.
+2. **Configure each node** — IP address, CVSS score, open ports, vulnerability flags. Paste a real CVE ID to auto-fetch its CVSS score from NIST NVD and EPSS exploit probability from FIRST.
 3. **Pin entry & target** — mark which node is the attacker's starting point and which is the high-value goal.
 4. **Pick a persona** — Standard, Script Kiddie, or APT. The same topology produces measurably different routes depending on the attacker model.
 5. **Run the simulation** — the backend computes the top 3 attack routes and animates them hop-by-hop on the canvas.
@@ -105,10 +105,10 @@ VITE_API_URL=http://127.0.0.1:8000
 ## How the engine works
 
 1. **Graph construction** — nodes and bidirectional edges are loaded into a `networkx.DiGraph` with dynamically computed per-edge weights.
-2. **Weight calculation** — each edge weight is computed from CVSS score, firewall IP rules, open-port overlap, patch status, and persona modifiers.
+2. **Weight calculation** — each edge weight is computed from CVSS score, EPSS probability, firewall IP rules, open-port overlap, patch status, and persona modifiers.
 3. **Pin resolution** — `is_attacker_entry` and `is_target_asset` flags resolve the start/end of the pathfinding problem; falls back to `nodes[0]` / `nodes[-1]` if not set.
 4. **Multi-path analysis** — `nx.shortest_simple_paths(weight='weight')` returns the **top 3 lowest-cost routes**. The primary path (index 0) is the most dangerous.
-5. **Risk scoring** — the primary path is traversed and a 0–100 score is accumulated based on node types, CVSS severity, vulnerability flags, and cleartext edges.
+5. **Risk scoring** — the primary path is traversed and a 0–100 score is accumulated based on node types, CVSS severity scaled by EPSS probability, vulnerability flags, and cleartext edges.
 6. **ATT&CK annotation** — each hop is mapped to MITRE ATT&CK techniques based on its config; technique badges appear in the simulation report.
 7. **Remediation mapping** — every risk factor on a compromised node generates a specific mitigation; results are deduplicated before being returned.
 
@@ -132,7 +132,7 @@ The same topology routes through physically different nodes depending on persona
 |---|---|
 | Firewall traversed | +10 |
 | Server / workstation traversed | +20 |
-| CVSS score present | +(cvss × 5) |
+| CVSS score present | +(cvss × 5) × EPSS multiplier |
 | RCE vulnerability | +30 |
 | Weak credentials | +15 |
 | Unpatched node | +10 |

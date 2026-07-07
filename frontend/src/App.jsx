@@ -239,6 +239,7 @@ export default function App() {
   const [persona, setPersona] = useState("standard");
   const [loading, setLoading] = useState(false);
   const [simulationStatus, setSimulationStatus] = useState("idle"); // 'idle' | 'running' | 'complete' | 'error'
+  const [isWakingUp, setIsWakingUp] = useState(false);
   const [error, setError] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const reactFlowWrapper = useRef(null);
@@ -645,6 +646,11 @@ export default function App() {
     setSimulationStatus("running");
     setError(null);
     setShowReport(false);
+    setIsWakingUp(false);
+
+    const wakeUpTimer = setTimeout(() => {
+      setIsWakingUp(true);
+    }, 1800);
 
     try {
       const payload = {
@@ -710,6 +716,8 @@ export default function App() {
       setShowReport(false);
       setError(`Simulation failed: ${err.message || "Backend unreachable"}`);
     } finally {
+      clearTimeout(wakeUpTimer);
+      setIsWakingUp(false);
       setLoading(false);
     }
   };
@@ -900,11 +908,11 @@ export default function App() {
           />
           <span className="status-label">
             {simulationStatus === "running"
-              ? "Simulation Running…"
+              ? (isWakingUp ? "Waking up backend…" : "Simulation Running…")
               : simulationStatus === "complete"
                 ? `Attack Path Resolved · ${primaryPath.length} Hops`
                 : simulationStatus === "error"
-                  ? "Offline Mode"
+                  ? (error ? (error.includes("Failed to fetch") ? "Backend Offline (Failed to fetch)" : error) : "Simulation Error")
                   : `${nodes.length} Nodes · ${edges.length} Edges`}
           </span>
         </div>
@@ -1134,7 +1142,7 @@ export default function App() {
             ) : (
               <Play size={16} />
             )}
-            <span>{loading ? "Simulating…" : "Run Simulation"}</span>
+            <span>{loading ? (isWakingUp ? "Waking up…" : "Simulating…") : "Run Simulation"}</span>
           </button>
         </div>
       </header>

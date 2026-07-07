@@ -15,7 +15,8 @@ class NodeModel(BaseModel):
             "- ip_address: str (e.g., '192.168.1.50')\n"
             "- open_ports: List[int] (e.g., [80, 443])\n"
             "- allowed_ips: List[str] (whitelisted IPs for firewall control)\n"
-            "- cvss_score: float (vulnerability severity score from 0.0 to 10.0)"
+            "- cvss_score: float (vulnerability severity score from 0.0 to 10.0)\n"
+            "- epss_score: float (exploit prediction probability from 0.0 to 1.0)"
         ),
     )
 

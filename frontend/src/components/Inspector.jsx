@@ -90,6 +90,7 @@ const EDIT_KEYS = [
   "open_ports",
   "cve_id",
   "attack_techniques",
+  "epss_score",
 ];
 
 const inputStyle = {
@@ -1054,12 +1055,26 @@ export default function Inspector({
                   setCveError(null);
                   setCveSummary(null);
                   try {
-                    const res = await fetch(
-                      `https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${id}`,
-                    );
+                    const [res, epssRes] = await Promise.all([
+                      fetch(`https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${id}`),
+                      fetch(`https://api.first.org/data/v1/epss?cve=${id}`)
+                    ]);
+
                     if (!res.ok)
                       throw new Error(`NVD responded with ${res.status}`);
+                    
                     const data = await res.json();
+                    
+                    let epssScore = null;
+                    let epssPercentile = null;
+                    if (epssRes.ok) {
+                      const epssData = await epssRes.json();
+                      if (epssData?.data?.[0]) {
+                        epssScore = parseFloat(epssData.data[0].epss);
+                        epssPercentile = parseFloat(epssData.data[0].percentile);
+                      }
+                    }
+
                     const vuln = data.vulnerabilities?.[0]?.cve;
                     if (!vuln) throw new Error("CVE not found in NVD database");
                     const m31 = vuln.metrics?.cvssMetricV31?.[0];
@@ -1070,22 +1085,27 @@ export default function Inspector({
                     const desc =
                       vuln.descriptions?.find((d) => d.lang === "en")?.value ||
                       "";
+                    
+                    const configUpdate = { cve_id: id };
                     if (score !== undefined) {
                       const rounded = Math.round(score * 10) / 10;
-                      updateNodeConfig(selectedNode.id, {
-                        cvss_score: rounded,
-                        cve_id: id,
-                      });
+                      configUpdate.cvss_score = rounded;
                       setCvssText(String(rounded));
-                    } else {
-                      updateNodeConfig(selectedNode.id, { cve_id: id });
                     }
+                    if (epssScore !== null) {
+                      configUpdate.epss_score = epssScore;
+                    }
+                    
+                    updateNodeConfig(selectedNode.id, configUpdate);
+                    
                     setCveSummary({
                       score,
                       severity: metric?.cvssData?.baseSeverity,
                       version: m31 ? "3.1" : m30 ? "3.0" : "2.0",
                       description:
                         desc.length > 160 ? desc.slice(0, 160) + "…" : desc,
+                      epssScore,
+                      epssPercentile
                     });
                   } catch (err) {
                     setCveError(err.message || "Lookup failed");
@@ -1172,6 +1192,33 @@ export default function Inspector({
                       }}
                     >
                       CVSS {cveSummary.version}: {cveSummary.score}
+                    </span>
+                  )}
+                  {cveSummary.epssScore !== undefined && cveSummary.epssScore !== null && (
+                    <span
+                      style={{
+                        background:
+                          cveSummary.epssScore >= 0.5
+                            ? "rgba(244,63,94,0.15)"
+                            : cveSummary.epssScore >= 0.1
+                              ? "rgba(245,158,11,0.15)"
+                              : "rgba(99,102,241,0.12)",
+                        border: `1px solid ${cveSummary.epssScore >= 0.5 ? "rgba(244,63,94,0.4)" : cveSummary.epssScore >= 0.1 ? "rgba(245,158,11,0.4)" : "rgba(99,102,241,0.3)"}`,
+                        color:
+                          cveSummary.epssScore >= 0.5
+                            ? "var(--accent-rose)"
+                            : cveSummary.epssScore >= 0.1
+                              ? "var(--accent-amber)"
+                              : "var(--accent-indigo)",
+                        borderRadius: "4px",
+                        padding: "2px 6px",
+                        fontFamily: "var(--font-mono)",
+                        fontWeight: 700,
+                        fontSize: "11px",
+                      }}
+                      title={`EPSS Percentile: ${Math.round(cveSummary.epssPercentile * 100)}%`}
+                    >
+                      EPSS: {(cveSummary.epssScore * 100).toFixed(1)}%
                     </span>
                   )}
                   {cveSummary.severity && (

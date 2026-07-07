@@ -200,8 +200,11 @@ def calculate_traversal_cost(
     else:
         cost = 100
         cvss_score = tgt_config.get("cvss_score")
+        epss_score = tgt_config.get("epss_score", 0.0)
+        
         if cvss_score is not None:
-            cost -= float(cvss_score) * 8
+            multiplier = 0.5 + (float(epss_score) * 2.0)
+            cost -= float(cvss_score) * 8 * multiplier
 
         if src_config.get("is_compromised") is True:
             src_ports = src_config.get("open_ports", [])
@@ -392,17 +395,31 @@ def compute_attack_path(graph_data: NetworkGraph) -> dict:
             else:
                 risk_score += 20.0
                 cvss = config.get("cvss_score")
+                epss = config.get("epss_score")
                 if cvss is not None:
                     cvss_val = float(cvss)
-                    risk_score += cvss_val * 5.0
+                    epss_val = float(epss) if epss is not None else 0.0
+                    multiplier = 0.5 + (epss_val * 2.0)
+                    risk_score += (cvss_val * 5.0) * multiplier
+                    
                     if cvss_val >= 7.0:
-                        contributing_factors.append(
-                            f"High CVSS vulnerability ({cvss_val}) detected on host '{node_label}'."
-                        )
+                        if epss_val > 0.8:
+                            contributing_factors.append(
+                                f"Highly exploitable critical CVE (CVSS {cvss_val}, EPSS {epss_val*100:.1f}%) on host '{node_label}'."
+                            )
+                        else:
+                            contributing_factors.append(
+                                f"High CVSS vulnerability ({cvss_val}) detected on host '{node_label}'."
+                            )
                     elif cvss_val > 0.0:
-                        contributing_factors.append(
-                            f"Vulnerability with CVSS score {cvss_val} present on host '{node_label}'."
-                        )
+                        if epss_val > 0.8:
+                            contributing_factors.append(
+                                f"Highly exploitable CVE (CVSS {cvss_val}, EPSS {epss_val*100:.1f}%) present on host '{node_label}'."
+                            )
+                        else:
+                            contributing_factors.append(
+                                f"Vulnerability with CVSS score {cvss_val} present on host '{node_label}'."
+                            )
 
                 if config.get("has_rce_vulnerability") is True:
                     risk_score += 30.0
