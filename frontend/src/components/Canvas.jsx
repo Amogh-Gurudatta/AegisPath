@@ -46,6 +46,7 @@ export default function Canvas({
         onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
         onInit={onInit}
+        connectionRadius={100}
         fitView
         fitViewOptions={{ padding: 0.15 }}
         defaultEdgeOptions={{ type: "smoothstep" }}
