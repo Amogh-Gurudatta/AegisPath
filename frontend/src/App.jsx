@@ -666,7 +666,7 @@ export default function App() {
 
     const wakeUpTimer = setTimeout(() => {
       setIsWakingUp(true);
-    }, 800);
+    }, 5000);
 
     try {
       const payload = {
