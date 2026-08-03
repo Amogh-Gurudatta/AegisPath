@@ -477,6 +477,16 @@ h6,
   }
 }
 
+/* Progress bar that fills over ~60 s to reflect Render cold-start time */
+@keyframes cold-start-bar {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
 /* ════════════════════════════════
    MAIN LAYOUT
 ════════════════════════════════ */

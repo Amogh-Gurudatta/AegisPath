@@ -264,6 +264,15 @@ export default function App() {
     }
   }, []);
 
+  // Background warmup ping — fires once on mount so Render's free-tier container
+  // starts booting immediately, before the user clicks "Run Simulation".
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || "https://aegispath.onrender.com";
+    fetch(`${apiUrl}/health`, { method: "GET" }).catch(() => {
+      // Silently ignore — this is a best-effort warmup, not a health check.
+    });
+  }, []);
+
   const updateNodeConfig = (nodeId, newConfig) => {
     setNodes((nds) =>
       nds.map((node) => {
@@ -657,7 +666,7 @@ export default function App() {
 
     const wakeUpTimer = setTimeout(() => {
       setIsWakingUp(true);
-    }, 1800);
+    }, 800);
 
     try {
       const payload = {
@@ -900,6 +909,96 @@ export default function App() {
 
   return (
     <div className="dashboard-container">
+      {/* ── Cold-start overlay ── */}
+      {loading && isWakingUp && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(8, 10, 15, 0.82)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              background: "var(--bg-secondary)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "16px",
+              padding: "36px 44px",
+              maxWidth: "420px",
+              width: "90%",
+              textAlign: "center",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.5)",
+            }}
+          >
+            {/* Spinning icon */}
+            <div style={{ marginBottom: "18px" }}>
+              <Activity
+                size={36}
+                className="spin"
+                style={{ color: "var(--accent-indigo)" }}
+              />
+            </div>
+
+            <h3
+              style={{
+                fontSize: "17px",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                marginBottom: "8px",
+              }}
+            >
+              Waking up the backend…
+            </h3>
+            <p
+              style={{
+                fontSize: "13px",
+                color: "var(--text-secondary)",
+                lineHeight: 1.6,
+                marginBottom: "24px",
+              }}
+            >
+              The backend is hosted on Render&apos;s free tier and may take up
+              to&nbsp;<strong style={{ color: "var(--text-primary)" }}>60 seconds</strong>&nbsp;to
+              cold-start. Hang tight — your simulation will run automatically once
+              it&apos;s ready.
+            </p>
+
+            {/* Animated progress bar */}
+            <div
+              style={{
+                height: "4px",
+                borderRadius: "4px",
+                background: "var(--bg-primary)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  borderRadius: "4px",
+                  background:
+                    "linear-gradient(90deg, var(--accent-indigo), var(--accent-rose))",
+                  animation: "cold-start-bar 60s linear forwards",
+                }}
+              />
+            </div>
+            <p
+              style={{
+                fontSize: "11px",
+                color: "var(--text-muted)",
+                marginTop: "10px",
+              }}
+            >
+              This only happens after a period of inactivity.
+            </p>
+          </div>
+        </div>
+      )}
       {/* ── Header ── */}
       <header className="dashboard-header">
         <div className="logo-section">
