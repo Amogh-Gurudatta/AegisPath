@@ -230,7 +230,7 @@ export default function OnboardingTour({ run, setRun }) {
           height: "14px",
           padding: "4px",
         },
-        buttonNext: {
+        buttonPrimary: {
           backgroundColor: "var(--accent-indigo)",
           color: "#ffffff",
           fontFamily: "var(--font-sans)",
@@ -241,7 +241,6 @@ export default function OnboardingTour({ run, setRun }) {
           outline: "none",
           border: "none",
           cursor: "pointer",
-          transition: "opacity 0.2s ease",
         },
         buttonBack: {
           color: "var(--text-secondary)",
