@@ -3,7 +3,7 @@
 **Interactive threat topology simulator.** Model your network, run an attack-path simulation, and get a prioritised risk report — in seconds.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://aegis-path-phi.vercel.app/)
-[![API](https://img.shields.io/badge/API-Railway-violet.svg)](https://aegispath-production.up.railway.app/docs)
+[![API](https://img.shields.io/badge/API-Render-46E3B7.svg)](https://aegispath.onrender.com/docs)
 [![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20NetworkX-blue.svg)](./backend)
 [![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-purple.svg)](./frontend)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](./LICENSE)

@@ -2,14 +2,14 @@
 
 FastAPI + NetworkX simulation engine. Accepts a network topology, runs multi-path Dijkstra, and returns risk scores, attack paths, MITRE ATT&CK techniques, and mitigations.
 
-[![Live API](https://img.shields.io/badge/API-Railway-violet.svg)](https://aegispath-production.up.railway.app)
-[![Swagger](https://img.shields.io/badge/docs-Swagger%20UI-blue.svg)](https://aegispath-production.up.railway.app/docs)
+[![Live API](https://img.shields.io/badge/API-Render-46E3B7.svg)](https://aegispath.onrender.com)
+[![Swagger](https://img.shields.io/badge/docs-Swagger%20UI-blue.svg)](https://aegispath.onrender.com/docs)
 
 |          | URL                                                           |
 | -------- | ------------------------------------------------------------- |
-| Base URL | `https://aegispath-production.up.railway.app`                 |
-| Health   | [/health](https://aegispath-production.up.railway.app/health) |
-| Swagger  | [/docs](https://aegispath-production.up.railway.app/docs)     |
+| Base URL | `https://aegispath.onrender.com`                 |
+| Health   | [/health](https://aegispath.onrender.com/health) |
+| Swagger  | [/docs](https://aegispath.onrender.com/docs)     |
 
 ---
 
@@ -26,7 +26,7 @@ uvicorn app.main:app --reload --port 8000
 ```env
 PORT=8000
 HOST=127.0.0.1
-CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+CORS_ORIGINS=https://aegis-path-phi.vercel.app,http://localhost:5173,http://127.0.0.1:5173
 GROQ_API_KEY=          # required for /api/enrich-cve; get a free key at console.groq.com
 ```
 
