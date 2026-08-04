@@ -528,9 +528,18 @@ export default function App() {
     );
   }, [setNodes, setEdges]);
 
-  const runSequentialAnimation = async (paths) => {
+  const runSequentialAnimation = async (paths, nodeCount) => {
     resetGraphStyles();
     if (!paths || paths.length === 0) return;
+
+    // Scale delays based on path length so large topologies don't crawl.
+    // Target: total animation ≤ ~4 seconds regardless of path size.
+    const hopCount = paths[0]?.length ?? 1;
+    // Beyond 4 hops, compress proportionally down to minimums of 120ms + 200ms.
+    const rawAnalyze = Math.max(120, Math.round(400 * (4 / Math.max(hopCount, 4))));
+    const rawCompromise = Math.max(200, Math.round(700 * (4 / Math.max(hopCount, 4))));
+    const analyzeDelay = rawAnalyze;
+    const compromiseDelay = rawCompromise;
 
     const primaryPath = paths[0];
     const altPaths = paths.slice(1);
@@ -607,7 +616,7 @@ export default function App() {
         ),
       );
 
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, analyzeDelay));
 
       // Phase 2: Compromised (rose glow)
       setNodes((nds) =>
@@ -647,7 +656,7 @@ export default function App() {
         );
       }
 
-      await new Promise((r) => setTimeout(r, 700));
+      await new Promise((r) => setTimeout(r, compromiseDelay));
     }
   };
 
@@ -664,9 +673,16 @@ export default function App() {
     setShowReport(false);
     setIsWakingUp(false);
 
+    // Only show the wakeup overlay during the backend fetch, not during animation.
     const wakeUpTimer = setTimeout(() => {
       setIsWakingUp(true);
-    }, 5000);
+    }, 800);
+
+    let paths = [];
+    let factors = [];
+    let remediations = [];
+    let score = 0;
+    let techniques = [];
 
     try {
       const payload = {
@@ -702,39 +718,36 @@ export default function App() {
 
       const result = await response.json();
       if (result.success) {
-        const paths = result.attack_paths || [];
-        const factors = result.contributing_factors || [];
-        const remediations = result.recommended_actions || [];
-        const score = result.risk_score ?? 0;
-
-        setSimulationPaths(paths);
-        setContributingFactors(factors);
-        setSimulationReport(factors);
-        setRemediationPlan(remediations);
-        setRiskScore(score);
-        setAttackTechniques(result.attack_path_techniques || []);
-
-        await runSequentialAnimation(paths);
-        setSimulationStatus("complete");
-        setShowReport(true);
+        paths = result.attack_paths || [];
+        factors = result.contributing_factors || [];
+        remediations = result.recommended_actions || [];
+        score = result.risk_score ?? 0;
+        techniques = result.attack_path_techniques || [];
       }
     } catch (err) {
       console.error("[AegisPath] Simulation failed:", err);
-
-      setSimulationPaths([]);
-      setContributingFactors([]);
-      setSimulationReport([]);
-      setRemediationPlan([]);
-      setRiskScore(0);
-      setAttackTechniques([]);
-
       setSimulationStatus("error");
       setShowReport(false);
       setError(`Simulation failed: ${err.message || "Backend unreachable"}`);
     } finally {
+      // Dismiss the wakeup overlay as soon as we have the response.
       clearTimeout(wakeUpTimer);
       setIsWakingUp(false);
       setLoading(false);
+    }
+
+    // Run the animation only if the fetch succeeded and returned a path.
+    if (paths.length > 0) {
+      setSimulationPaths(paths);
+      setContributingFactors(factors);
+      setSimulationReport(factors);
+      setRemediationPlan(remediations);
+      setRiskScore(score);
+      setAttackTechniques(techniques);
+
+      await runSequentialAnimation(paths);
+      setSimulationStatus("complete");
+      setShowReport(true);
     }
   };
 
